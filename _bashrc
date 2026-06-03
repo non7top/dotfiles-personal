@@ -10,7 +10,7 @@ fi
 
 # User specific aliases and functions
 test -f $HOME/spm/local.env && source $HOME/spm/local.env
-#eval "$(chef shell-init bash)"
+test -f /usr/bin/chef && eval "$(chef shell-init bash)"
 
 # PS1 Prompt with exit code. Skips 130 exit code, which is for Ctrl+C, i.e. Ctrl+C clears exit code
 PS1error="$( ret=$? ; test $ret -gt 0 -a $ret -ne 130 && echo "\[\e[41;93m\][$ret]\[\e[0m\] " )"
@@ -28,9 +28,19 @@ if [ -d $HOME/.local_env ]; then
 fi
 
 
-source ~/.knife-block-prompt.sh
+#source ~/.knife-block-prompt.sh
+if ! command -v knife_block_prompt &> /dev/null; then
+    # Define it as an empty function
+    knife_block_prompt() { :; }
+fi
+
 source ~/.git-prompt.sh
-source ~/.bash-prompt-okta-expiration.sh
+#source ~/.bash-prompt-okta-expiration.sh
+if ! command -v okta_expiration_prompt &> /dev/null; then
+    # Define it as an empty function
+    okta_expiration_prompt() { :; }
+fi
+
 
 function app_prompt_k8s() {
   if [ ! -z $KUBECONFIG ]; then
@@ -72,11 +82,11 @@ export GPG_TTY
 
 export EDITOR=vim
 
-if [[ -d "$HOME/.nvm" ]]; then
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-fi
+#if [[ -d "$HOME/.nvm" ]]; then
+#  export NVM_DIR="$HOME/.nvm"
+#  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+#  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+#fi
 
 if [[ -d "$HOME/perl5" ]]; then
   export PERL_LOCAL_LIB_ROOT="$PERL_LOCAL_LIB_ROOT:$HOME/perl5";
@@ -88,6 +98,7 @@ if [[ -d "$HOME/perl5" ]]; then
 fi
 
 export PATH="$HOME/.java/bin:$PATH"
+export PATH="$PATH:$HOME/bin"
 
 #OktaAWSCLI
 if [[ -f "$HOME/.okta/bash_functions" ]]; then
@@ -112,3 +123,5 @@ export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId');\
 export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey');\
 export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken');
 }
+
+#export TMPDIR=${TMPDIR:-/tmp}

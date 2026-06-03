@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#set -x
+exit 0
+origin="$(git config --get remote.origin.url)" || { echo "Incorrect user is set for this origin, please doublecheck"; exit 1; }
+orgin_domain=$( echo "$origin" | sed 's|.*//||; s|.*@||; s|/.*||; s|:.*||' | sed -e 's#\.#-#g' )
+
+default_for_domain="$( git config --get user.default.${orgin_domain} )"
+current_email="$( git config --get user.email )"
+
+if [ "x$current_email" != "x$default_for_domain" ]; then
+    echo "Incorrect user is set for this origin, please doublecheck"
+    echo "git config --add user.email $default_for_domain"
+    exit 1
+fi
