@@ -62,6 +62,15 @@ done
 
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then
+    info "Backing up existing dotfiles..."
+    for f in "$SCRIPT_DIR"/_*; do
+        target="$HOME/.$(basename "$f" | sed 's/^_//')"
+        if [ -e "$target" ] && [ ! -L "$target" ]; then
+            mv "$target" "${target}.bak"
+            echo "  backed up $(basename "$target") -> $(basename "$target").bak"
+        fi
+    done
+
     info "Syncing dotfiles..."
     dotfiles --sync
     success "Dotfiles synced"
