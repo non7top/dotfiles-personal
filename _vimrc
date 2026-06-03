@@ -279,7 +279,7 @@ au BufNewFile */roles/*.rb 0r ~/.vim/chef_role.rb.skel
 " (despite the mappings later):
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0
 
-autocmd FileType md set set textwidth=80
+autocmd FileType md set textwidth=80
 
 " Disable annoying beeping
 set noerrorbells

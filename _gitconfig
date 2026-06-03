@@ -44,6 +44,6 @@
 [stash]
 	showIncludeUntracked = true
 [core]
-	hooksPath = /home/hmh/.git/hooks/
+	hooksPath = ~/.git/hooks/
 [init]
 	defaultBranch = master
