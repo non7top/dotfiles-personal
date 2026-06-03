@@ -1,0 +1,29 @@
+name: Test Bootstrap
+
+on:
+  push:
+    paths:
+      - bootstrap.sh
+      - _tool-versions
+  pull_request:
+    paths:
+      - bootstrap.sh
+      - _tool-versions
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run bootstrap
+        run: bash bootstrap.sh
+
+      - name: Verify tools
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          asdf version
+          kubectl version --client
+          helm version
+          gh --version
+          k9s version

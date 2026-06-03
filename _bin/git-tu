@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 git cd
 git fetch upstream
 git branch --set-upstream-to=upstream/$(git sd) $(git sd)

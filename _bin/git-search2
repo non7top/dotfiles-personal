@@ -1,1 +1,2 @@
-git branch -a --contains $*
+#!/usr/bin/env bash
+git branch -a --contains "$@"

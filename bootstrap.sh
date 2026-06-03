@@ -30,6 +30,8 @@ asdf install --file "$SCRIPT_DIR/_tool-versions"
 pipx install dotfiles
 pipx install pre-commit
 
-# Sync dotfiles
-cd "$SCRIPT_DIR"
-dotfiles --sync
+# Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
+if [ -z "${CI:-}" ]; then
+    cd "$SCRIPT_DIR"
+    dotfiles --sync
+fi
