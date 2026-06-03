@@ -3,8 +3,8 @@
 # ID: 138fd403232d2ddd5efb44317e38bf03
 
 # start templated
-INSTALL_PYTHON=/home/hmh/.local/pipx/venvs/pre-commit/bin/python
-ARGS=(hook-impl --config=/home/hmh/.git/.pre-commit-config.yaml --hook-type=pre-commit)
+INSTALL_PYTHON=$HOME/.local/pipx/venvs/pre-commit/bin/python
+ARGS=(hook-impl --config=$HOME/.git/.pre-commit-config.yaml --hook-type=pre-commit)
 # end templated
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
