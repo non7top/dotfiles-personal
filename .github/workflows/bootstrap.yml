@@ -1,0 +1,24 @@
+name: Test Bootstrap
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'  # every Monday at 06:00 UTC
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run bootstrap
+        run: bash bootstrap.sh
+
+      - name: Verify tools
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
+          asdf version
+          kubectl version --client
+          helm version
+          gh --version
+          k9s version
