@@ -13,35 +13,18 @@ Installation
 Files are managed with `dotfiles <https://github.com/jbernard/dotfiles>`_ using the ``_`` prefix convention
 (e.g. ``_bashrc`` → ``~/.bashrc``).
 
-**1. Clone the repo**
+**Quick start** (fresh machine, one line):
 
 .. code-block:: bash
 
-    git clone https://github.com/non7top/dotfiles.git ~/dotfiles
+    sudo apt install -y git curl && git clone git@github.com:non7top/dotfiles.git ~/dotfiles && cd ~/dotfiles && ./bootstrap.sh
 
-**2. Install the dotfiles tool and sync**
+``bootstrap.sh`` will:
 
-.. code-block:: bash
-
-    pipx install dotfiles
-    cd ~/dotfiles
-    dotfiles --sync
-
-**3. Install asdf and tools**
-
-.. code-block:: bash
-
-    # Install asdf: https://asdf-vm.com/guide/getting-started.html
-    git clone https://github.com/asdf-vm/asdf.git ~/.asdf
-    # Re-source your shell, then:
-    asdf plugin add <name>   # for each tool in _tool-versions
-    asdf install
-
-**4. Install pre-commit**
-
-.. code-block:: bash
-
-    pipx install pre-commit
+- install pipx and asdf (latest binary from GitHub releases)
+- add asdf plugins and install all tools from ``_tool-versions``
+- ``pipx install dotfiles pre-commit``
+- run ``dotfiles --sync``
 
 The global git hooks in ``_git/hooks/`` are wired via ``core.hooksPath = ~/.git/hooks/``
 (set in ``_gitconfig``). After syncing, hooks run automatically on every repo.
