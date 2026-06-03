@@ -61,6 +61,14 @@ while IFS= read -r pkg || [ -n "$pkg" ]; do
     fi
 done < "$SCRIPT_DIR/_pipx-tools"
 
+# Install npm global tools
+info "Installing npm global tools..."
+while IFS= read -r pkg || [ -n "$pkg" ]; do
+    [ -z "$pkg" ] && continue
+    echo -n "  installing ${pkg}... "
+    npm install -g "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
+done < "$SCRIPT_DIR/_npm-global-tools"
+
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then
     info "Backing up existing dotfiles..."
