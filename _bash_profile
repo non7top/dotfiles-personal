@@ -8,14 +8,16 @@ fi
 # User specific environment and startup programs
 export HISTSIZE=999999
 export HISTFILESIZE=999999
+export HISTCONTROL=ignoredups:erasedups
+
+export EDITOR=vim
+export AWS_DEFAULT_REGION=us-east-1
 
 PATH=$HOME/.local/bin:$HOME/bin:$PATH:$HOME/.bin
 
 export PATH="$HOME/.tfenv/bin:$PATH"
 export PATH="${PATH}:${HOME}/.krew/bin"
 export PATH
-
-alias gcd='cd $(git root)'
 
 # If PS1 is not set, this is an automated/non-interactive shell. Skip the script utility!
 if [ -z "$PS1" ]; then
