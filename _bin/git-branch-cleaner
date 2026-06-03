@@ -11,7 +11,7 @@ git pull upstream HEAD --tags
 
 git fetch
 
-_default=$(git sm)
+_default=$(git sd)
 
 # Prune obsolete remote tracking branches. These are branches that we
 # once tracked, but have since been deleted on the remote.
