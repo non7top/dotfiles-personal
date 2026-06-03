@@ -51,14 +51,15 @@ success "All tools installed"
 
 # Install pipx tools
 info "Installing pipx tools..."
-for pkg in dotfiles pre-commit; do
-    if pipx list 2>/dev/null | grep -q "$pkg"; then
+while IFS= read -r pkg || [ -n "$pkg" ]; do
+    [ -z "$pkg" ] && continue
+    if pipx list 2>/dev/null | grep -qw "$pkg"; then
         success "${pkg} already installed"
     else
         echo -n "  installing ${pkg}... "
         pipx install "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
     fi
-done
+done < "$SCRIPT_DIR/_pipx-tools"
 
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then
