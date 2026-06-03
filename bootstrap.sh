@@ -20,11 +20,13 @@ if ! command -v asdf &>/dev/null; then
 fi
 
 # Add plugins and install tools from _tool-versions
+ln -sf "$SCRIPT_DIR/_tool-versions" "$HOME/.tool-versions"
+
 while IFS=' ' read -r tool _version; do
     asdf plugin add "$tool" 2>/dev/null || true
 done < "$SCRIPT_DIR/_tool-versions"
 
-asdf install --file "$SCRIPT_DIR/_tool-versions"
+asdf install
 
 # Install pipx tools
 pipx install dotfiles
