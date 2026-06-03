@@ -14,7 +14,7 @@ if ! command -v asdf &>/dev/null; then
     mkdir -p "$HOME/.local/bin"
     ASDF_VERSION=$(curl -fsSL https://api.github.com/repos/asdf-vm/asdf/releases/latest \
         | grep '"tag_name"' | cut -d'"' -f4 | tr -d 'v')
-    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf_${ASDF_VERSION}_linux_amd64.tar.gz" \
+    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz" \
         | tar -xz -C "$HOME/.local/bin" asdf
     export PATH="$HOME/.local/bin:$PATH"
 fi
