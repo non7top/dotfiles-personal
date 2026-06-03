@@ -110,8 +110,12 @@ fi
 
 export AWS_DEFAULT_REGION=us-east-1
 
-# https://asdf-vm.com/guide/getting-started.html
-. "$HOME/.asdf/asdf.sh"
+# asdf: source shell integration for bash-based install, or add shims for Go binary install
+if [ -f "$HOME/.asdf/asdf.sh" ]; then
+    . "$HOME/.asdf/asdf.sh"
+else
+    export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
+fi
 
 function jsonArrayToTable(){
      jq -r '(.[0] | ([keys[] | .] |(., map(length*"-")))), (.[] | ([keys[] as $k | .[$k]])) | @tsv' | column -t -s $'\t'
