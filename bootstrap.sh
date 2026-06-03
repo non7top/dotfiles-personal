@@ -63,7 +63,6 @@ done
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then
     info "Syncing dotfiles..."
-    cd "$SCRIPT_DIR"
     dotfiles --sync
     success "Dotfiles synced"
 fi
