@@ -3,8 +3,11 @@ repos:
   rev: v2.3.0
   hooks:
   - id: check-yaml
+    args: [--allow-multiple-documents]
+    exclude: ^(k8s/deploy/charts|apps/beacon/chart)/templates/
   - id: end-of-file-fixer
   - id: trailing-whitespace
+    args: [--markdown-linebreak-ext=md]
   - id: check-json
 - repo: https://github.com/gruntwork-io/pre-commit
   rev: v0.1.20

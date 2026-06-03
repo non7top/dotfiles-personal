@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#set -ex
+
+url="$1"  # https://scm.eng.hmhco.com/rochefortd/tfe-k8s-workload/tree/BR-24371
+
+if [ -z "$url" ]; then
+    echo "Argument should be like https://scm.eng.hmhco.com/rochefortd/tfe-k8s-workload/tree/BR-24371"
+    exit 1
+fi
+
+origin=$( git remote get-url origin ) # git@scm.eng.hmhco.com:berezhnoyv/tfe-k8s-workload.git
+
+# git remote add contributor https://github.com/contributor/repo.git
+# git fetch contributor
+# git checkout -b contributor-main contributor/main
+# git push contributor contributor-main:main
+
+new_contrib=$(echo $url | awk -F/ '{print $4}')
+new_repo=$(echo $url | awk -F/ '{print $5}')
+new_branch1=$(echo $url | awk -F/ '{print $7}')
+new_branch="${new_contrib}_${new_branch1}"
+
+old_host=""
+
+
+venv=$( echo ~/.cache/git-pr2/venv )
+
+if [ ! -f "$venv"/bin/activate ]; then
+    echo "Creating venv at $venv"
+    python3 -m venv "$venv"
+else
+    echo "Using venv $venv"
+fi
+
+set +x
+source "$venv"/bin/activate
+set -x
+
+pip install giturlparse
+
+new_origin=$( python - $origin $new_contrib $new_repo <<HEREDOC
+#import sys
+#for p in sys.path:
+#  print(p)
+
+import sys
+from giturlparse import parse
+
+p = parse(sys.argv[1])
+p.owner = sys.argv[2]
+p.name = sys.argv[3]
+
+print(p.url)
+
+HEREDOC
+)
+
+git remote add $new_contrib $new_origin
+git fetch $new_contrib
+git checkout -b $new_branch $new_contrib/$new_branch1
+git branch --set-upstream-to $new_contrib/$new_branch1
+git push $new_contrib $new_branch:$new_branch1

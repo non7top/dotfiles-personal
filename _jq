@@ -1,0 +1,1 @@
+def GROUPS_BY(stream; f): reduce stream as $x ({}; .[$x|f] += [$x] ) | .[] ;

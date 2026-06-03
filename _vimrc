@@ -30,14 +30,18 @@ call SetupVAM()
 VAMActivate github:vim-airline/vim-airline
 VAMActivate github:luochen1990/rainbow
 VAMActivate github:hashivim/vim-terraform
-VAMActivate github:tpope/vim-sleuth
+""""" VAMActivate github:tpope/vim-sleuth " smart set sw and ts based on what is used in file
 VAMActivate github:godlygeek/tabular
 VAMActivate github:vim-python/python-syntax
 VAMActivate github:andoriyu/salt-vim
 VAMActivate github:elzr/vim-json
 VAMActivate github:rhysd/conflict-marker.vim
 VAMActivate github:justinmk/vim-matchparenalways
-" VAMActivate github:airblade/vim-gitgutter
+"VAMActivate github:airblade/vim-gitgutter
+VAMActivate github:psycofdj/yaml-path
+" VAMActivate github:tpope/vim-markdown
+" VAMActivate github:preservim/vim-markdown " bad at formatting
+" VAMActivate github:gabrielelana/vim-markdown
 
 
 syntax on
@@ -275,6 +279,8 @@ au BufNewFile */roles/*.rb 0r ~/.vim/chef_role.rb.skel
 " (despite the mappings later):
 autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0
 
+autocmd FileType md set set textwidth=80
+
 " Disable annoying beeping
 set noerrorbells
 set vb t_vb=
@@ -285,9 +291,9 @@ let g:vim_json_syntax_conceal = 0
 
 " fix yaml indentation jumps
 " https://stackoverflow.com/a/37488992
-filetype plugin indent on
-autocmd FileType yml,yaml setlocal ts=2 sts=2 sw=2 expandtab indentkeys-=0# indentkeys-=<:>
-autocmd FileType sh,shell setlocal ts=4 sts=4 sw=4 expandtab
+"  filetype plugin indent on
+" autocmd FileType yml,yaml,yaml.gotmpl setlocal ts=2 sts=2 sw=2 expandtab " indentkeys-=0# indentkeys-=<:>
+"  autocmd FileType sh,shell setlocal ts=4 sts=4 sw=4 expandtab
 
 "syntax enable
 "set smartindent
@@ -297,7 +303,7 @@ autocmd FileType sh,shell setlocal ts=4 sts=4 sw=4 expandtab
 "autocmd FileType javascript set tabstop=2|set shiftwidth=2|set expandtab
 "autocmd FileType sh set tabstop=4|set shiftwidth=4|set expandtab
 
-filetype plugin indent on
+" filetype plugin indent on
 " show existing tab with 4 spaces width
 set tabstop=4
 " when indenting with '>', use 4 spaces width
@@ -337,3 +343,17 @@ highlight MatchParen ctermfg=black ctermbg=159 gui=underline
 if has("autocmd")
   au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 endif
+
+" set list listchars=tab:>-
+
+" https://github.com/psycofdj/yaml-path/blob/master/plugin/README.md
+" let yamlpath_auto=1
+
+" highlight link markdownCode somegroup
+" highlight link markdownCodeBlock somegroup
+
+" autocmd BufNewFile,BufReadPost *.yaml,*.yml,*yaml.gotmpl set filetype=yaml
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab " indentkeys-=0# indentkeys-=<:>
+
+
+" set langmap=wd,WD

@@ -3,6 +3,7 @@
 
 [push]
   default = matching
+	autoSetupRemote = true
 
 [color]
   diff = auto
@@ -29,8 +30,8 @@
   root = rev-parse --show-toplevel
   cdr = !cd $( git root )
   pushf = push -f origin HEAD
-	pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
-	pr-clean = "!git for-each-ref refs/heads/pr/* --format=\"%(refname)\" | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
+  pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
+  pr-clean = "!git for-each-ref refs/heads/pr/* --format=\"%(refname)\" | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
 
 [pager]
   log = diff-highlight | less
