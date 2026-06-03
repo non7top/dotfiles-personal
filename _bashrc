@@ -12,9 +12,6 @@ fi
 test -f $HOME/spm/local.env && source $HOME/spm/local.env
 test -f /usr/bin/chef && eval "$(chef shell-init bash)"
 
-# PS1 Prompt with exit code. Skips 130 exit code, which is for Ctrl+C, i.e. Ctrl+C clears exit code
-PS1error="$( ret=$? ; test $ret -gt 0 -a $ret -ne 130 && echo "\[\e[41;93m\][$ret]\[\e[0m\] " )"
-
 if [ -d $HOME/.local_env ]; then
     for i in $HOME/.local_env/*.env ; do
         if [ -r "$i" ]; then
@@ -75,12 +72,8 @@ PS1='$( ret=$? ; test $ret -gt 0 -a $ret -ne 130 && echo "\[\e[41;93m\][$ret]\[\
 
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-HISTFILESIZE=25000
-
 GPG_TTY=$(tty)
 export GPG_TTY
-
-export EDITOR=vim
 
 #if [[ -d "$HOME/.nvm" ]]; then
 #  export NVM_DIR="$HOME/.nvm"
@@ -98,7 +91,6 @@ if [[ -d "$HOME/perl5" ]]; then
 fi
 
 export PATH="$HOME/.java/bin:$PATH"
-export PATH="$PATH:$HOME/bin"
 
 #OktaAWSCLI
 if [[ -f "$HOME/.okta/bash_functions" ]]; then
@@ -108,14 +100,14 @@ if [[ -d "$HOME/.okta/bin" && ":$PATH:" != *":$HOME/.okta/bin:"* ]]; then
     PATH="$HOME/.okta/bin:$PATH"
 fi
 
-export AWS_DEFAULT_REGION=us-east-1
-
 # asdf: source shell integration for bash-based install, or add shims for Go binary install
 if [ -f "$HOME/.asdf/asdf.sh" ]; then
     . "$HOME/.asdf/asdf.sh"
 else
     export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
 fi
+
+alias gcd='cd $(git root)'
 
 function jsonArrayToTable(){
      jq -r '(.[0] | ([keys[] | .] |(., map(length*"-")))), (.[] | ([keys[] as $k | .[$k]])) | @tsv' | column -t -s $'\t'
