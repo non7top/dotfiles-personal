@@ -13,6 +13,11 @@ ok()      { echo -e "  ${GRN}✓ ok${RST}       $1"; }
 
 discrepancies=0
 
+in_ignore() {
+    local pkg="$1" ignore_file="$2"
+    [ -f "$ignore_file" ] && grep -qx "$pkg" "$ignore_file"
+}
+
 # --- pipx ---
 echo -e "\n${BLD}pipx tools${RST} (~/.pipx-tools)"
 if [ ! -f ~/.pipx-tools ]; then
@@ -29,6 +34,7 @@ else
     done < ~/.pipx-tools
     while IFS= read -r pkg; do
         [ -z "$pkg" ] && continue
+        in_ignore "$pkg" ~/.pipx-ignore && continue
         if ! grep -qx "$pkg" ~/.pipx-tools; then
             extra "$pkg"; ((discrepancies++))
         fi
@@ -53,8 +59,7 @@ else
     done < ~/.npm-global-tools
     while IFS= read -r pkg; do
         [ -z "$pkg" ] && continue
-        [[ "$pkg" == npm ]] && continue
-        [[ "$pkg" == corepack ]] && continue
+        in_ignore "$pkg" ~/.npm-ignore && continue
         if ! grep -q "^@\?${pkg}" ~/.npm-global-tools; then
             extra "$pkg"; ((discrepancies++))
         fi

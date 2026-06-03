@@ -21,6 +21,8 @@ jobs:
           ln -sf "$GITHUB_WORKSPACE/_pipx-tools" ~/.pipx-tools
           ln -sf "$GITHUB_WORKSPACE/_npm-global-tools" ~/.npm-global-tools
           ln -sf "$GITHUB_WORKSPACE/_tool-versions" ~/.tool-versions
+          ln -sf "$GITHUB_WORKSPACE/_pipx-ignore" ~/.pipx-ignore
+          ln -sf "$GITHUB_WORKSPACE/_npm-ignore" ~/.npm-ignore
 
       - name: Check tool manifests
         run: |
