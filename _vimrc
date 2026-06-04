@@ -26,6 +26,11 @@ Plug 'psycofdj/yaml-path'
 
 call plug#end()
 
+autocmd VimEnter *
+  \  if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+  \|   PlugInstall --sync | source $MYVIMRC
+  \| endif
+
 
 syntax on
 filetype plugin indent on
