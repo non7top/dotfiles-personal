@@ -47,6 +47,7 @@ done < "$SCRIPT_DIR/_tool-versions"
 
 info "Installing tools from _tool-versions..."
 asdf install
+. "$SCRIPT_DIR/_bashrc"
 success "All tools installed"
 
 # Install pipx tools
