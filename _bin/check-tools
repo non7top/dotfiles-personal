@@ -72,7 +72,7 @@ if [ ! -f ~/.tool-versions ]; then
 else
     while IFS=' ' read -r tool version || [ -n "$tool" ]; do
         [ -z "$tool" ] && continue
-        installed_ver=$(asdf list "$tool" 2>/dev/null | tr -d ' *' | tail -1)
+        installed_ver=$(asdf list "$tool" 2>/dev/null | tr -d ' *' | tail -1 || true)
         if [ -z "$installed_ver" ]; then
             missing "$tool $version"; ((discrepancies++))
         elif [ "$installed_ver" != "$version" ]; then
