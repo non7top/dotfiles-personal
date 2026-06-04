@@ -23,7 +23,7 @@ echo -e "\n${BLD}pipx tools${RST} (~/.pipx-tools)"
 if [ ! -f ~/.pipx-tools ]; then
     echo "  ~/.pipx-tools not found"
 else
-    installed=$(pipx list --short 2>/dev/null | awk '{print $1}')
+    installed=$(pipx list --short | awk '{print $1}')
     while IFS= read -r pkg || [ -n "$pkg" ]; do
         [ -z "$pkg" ] && continue
         if echo "$installed" | grep -qx "$pkg"; then
@@ -46,7 +46,7 @@ echo -e "\n${BLD}npm global tools${RST} (~/.npm-global-tools)"
 if [ ! -f ~/.npm-global-tools ]; then
     echo "  ~/.npm-global-tools not found"
 else
-    installed=$(npm list -g --depth=0 --json 2>/dev/null \
+    installed=$(npm list -g --depth=0 --json \
         | jq -r '.dependencies | keys[]')
     while IFS= read -r pkg || [ -n "$pkg" ]; do
         [ -z "$pkg" ] && continue
@@ -72,7 +72,7 @@ if [ ! -f ~/.tool-versions ]; then
 else
     while IFS=' ' read -r tool version || [ -n "$tool" ]; do
         [ -z "$tool" ] && continue
-        installed_ver=$(asdf list "$tool" 2>/dev/null | tr -d ' *' | tail -1 || true)
+        installed_ver=$(asdf list "$tool" 2>&1 | tr -d ' *' | tail -1 || true)
         if [ -z "$installed_ver" ]; then
             missing "$tool $version"; ((discrepancies++))
         elif [ "$installed_ver" != "$version" ]; then
