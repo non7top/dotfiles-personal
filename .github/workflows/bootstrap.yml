@@ -9,7 +9,7 @@ on:
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
@@ -29,13 +29,6 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
           bash _bin/check-tools
 
-  vim:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: bootstrap
-    steps:
-      - uses: actions/checkout@v6
-
       - name: Install vim
         run: sudo apt-get install -y vim
 
@@ -44,10 +37,10 @@ jobs:
           ln -sf "$GITHUB_WORKSPACE/_vimrc" ~/.vimrc
           ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
 
-      - name: Install plugins via VAM
+      - name: Install vim plugins via VAM
         run: vim --headless -c 'qall' 2>&1 || true
 
-      - name: Verify plugins installed
+      - name: Verify vim plugins
         run: |
           PLUGIN_DIR="$GITHUB_WORKSPACE/_vim/vim-addons"
           FAILED=0
