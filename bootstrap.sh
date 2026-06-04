@@ -41,7 +41,8 @@ while IFS=' ' read -r tool _version; do
         success "plugin ${tool} already added"
     else
         echo -n "  adding ${tool}... "
-        asdf plugin add "$tool" 2>/dev/null && echo -e "\e[1;32mdone\e[0m" || echo -e "\e[1;33mskipped\e[0m"
+        plugin_url=$(grep "^${tool} " "$SCRIPT_DIR/_asdf-plugin-sources" 2>/dev/null | awk '{print $2}')
+        asdf plugin add "$tool" $plugin_url 2>/dev/null && echo -e "\e[1;32mdone\e[0m" || echo -e "\e[1;33mskipped\e[0m"
     fi
 done < "$SCRIPT_DIR/_tool-versions"
 
