@@ -1,24 +1,30 @@
-name: Test Bootstrap
+name: Bootstrap
 
 on:
   pull_request:
   schedule:
     - cron: '0 6 * * 1'  # every Monday at 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - name: Run bootstrap
         run: bash bootstrap.sh
 
-      - name: Verify tools
+      - name: Symlink manifests
+        run: |
+          ln -sf "$GITHUB_WORKSPACE/_pipx-tools" ~/.pipx-tools
+          ln -sf "$GITHUB_WORKSPACE/_npm-global-tools" ~/.npm-global-tools
+          ln -sf "$GITHUB_WORKSPACE/_tool-versions" ~/.tool-versions
+          ln -sf "$GITHUB_WORKSPACE/_pipx-ignore" ~/.pipx-ignore
+          ln -sf "$GITHUB_WORKSPACE/_npm-ignore" ~/.npm-ignore
+
+      - name: Check tool manifests
         run: |
           export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
-          asdf version
-          kubectl version --client
-          helm version
-          gh --version
-          k9s version
+          bash _bin/check-tools
