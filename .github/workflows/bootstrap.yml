@@ -28,3 +28,37 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
           bash _bin/check-tools
+
+  vim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install vim
+        run: sudo apt-get install -y vim
+
+      - name: Symlink vim config
+        run: |
+          ln -sf "$GITHUB_WORKSPACE/_vimrc" ~/.vimrc
+          ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
+
+      - name: Install plugins via VAM
+        run: vim --headless -c 'qall' 2>&1 || true
+
+      - name: Verify plugins installed
+        run: |
+          PLUGIN_DIR="$GITHUB_WORKSPACE/_vim/vim-addons"
+          FAILED=0
+          while IFS= read -r line; do
+            plugin=$(echo "$line" | sed 's/VAMActivate github://')
+            dir="${PLUGIN_DIR}/github-$(echo "$plugin" | sed 's|/|-|g')"
+            if [ -d "$dir" ]; then
+              echo "✓ $plugin"
+            else
+              echo "✗ $plugin (not found at $dir)"
+              FAILED=1
+            fi
+          done < <(grep '^VAMActivate github:' "$GITHUB_WORKSPACE/_vimrc")
+          exit $FAILED
