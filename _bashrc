@@ -76,8 +76,7 @@ PS1='$( ret=$? ; test $ret -gt 0 -a $ret -ne 130 && echo "\[\e[41;93m\][$ret]\[\
 
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-GPG_TTY=$(tty)
-export GPG_TTY
+[ -t 0 ] && { GPG_TTY=$(tty); export GPG_TTY; }
 
 #if [[ -d "$HOME/.nvm" ]]; then
 #  export NVM_DIR="$HOME/.nvm"
