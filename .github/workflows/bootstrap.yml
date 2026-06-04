@@ -38,7 +38,7 @@ jobs:
           ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
 
       - name: Install vim plugins
-        run: vim -es -u ~/.vimrc -i NONE -c "PlugInstall --sync" -c "qa"
+        run: vim -es -u ~/.vimrc -i NONE -c "call plug#install()" -c "qa"
 
       - name: Verify vim plugins
         run: |
