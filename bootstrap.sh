@@ -75,6 +75,16 @@ while IFS= read -r pkg || [ -n "$pkg" ]; do
     npm install -g "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
 done < "$SCRIPT_DIR/_npm-global-tools"
 
+# Install vim-plug
+if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
+    success "vim-plug already installed"
+else
+    info "Installing vim-plug..."
+    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    success "vim-plug installed"
+fi
+
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then
     info "Backing up existing dotfiles..."
