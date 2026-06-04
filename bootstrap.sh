@@ -41,24 +41,49 @@ while IFS=' ' read -r tool _version; do
         success "plugin ${tool} already added"
     else
         echo -n "  adding ${tool}... "
-        asdf plugin add "$tool" 2>/dev/null && echo -e "\e[1;32mdone\e[0m" || echo -e "\e[1;33mskipped\e[0m"
+        plugin_url=$(grep "^${tool} " "$SCRIPT_DIR/_asdf-plugin-sources" 2>/dev/null | awk '{print $2}' || true)
+        if asdf plugin add "$tool" $plugin_url; then
+            echo -e "\e[1;32mdone\e[0m"
+        else
+            die "failed to add plugin ${tool}"
+        fi
     fi
 done < "$SCRIPT_DIR/_tool-versions"
 
 info "Installing tools from _tool-versions..."
 asdf install
+. "$SCRIPT_DIR/_bashrc"
 success "All tools installed"
 
 # Install pipx tools
 info "Installing pipx tools..."
-for pkg in dotfiles pre-commit; do
-    if pipx list 2>/dev/null | grep -q "$pkg"; then
+while IFS= read -r pkg || [ -n "$pkg" ]; do
+    [ -z "$pkg" ] && continue
+    if pipx list 2>/dev/null | grep -qw "$pkg"; then
         success "${pkg} already installed"
     else
         echo -n "  installing ${pkg}... "
         pipx install "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
     fi
-done
+done < "$SCRIPT_DIR/_pipx-tools"
+
+# Install npm global tools
+info "Installing npm global tools..."
+while IFS= read -r pkg || [ -n "$pkg" ]; do
+    [ -z "$pkg" ] && continue
+    echo -n "  installing ${pkg}... "
+    npm install -g "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
+done < "$SCRIPT_DIR/_npm-global-tools"
+
+# Install vim-plug
+if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
+    success "vim-plug already installed"
+else
+    info "Installing vim-plug..."
+    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    success "vim-plug installed"
+fi
 
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if [ -z "${CI:-}" ]; then

@@ -1,47 +1,36 @@
-" execute pathogen#infect()
+" Bootstrap vim-plug
+set nocompatible
 
-" https://github.com/MarcWeber/vim-addon-manager
-" put this line first in ~/.vimrc
-set nocompatible | filetype indent plugin on | syn on
+let data_dir = expand('~/.vim')
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fsSLo ' . data_dir . '/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
 
-fun! SetupVAM()
-  let c = get(g:, 'vim_addon_manager', {})
-  let g:vim_addon_manager = c
-  let c.plugin_root_dir = expand('$HOME', 1) . '/.vim/vim-addons'
+call plug#begin('~/.vim/plugged')
 
-  " Force your ~/.vim/after directory to be last in &rtp always:
-  " let g:vim_addon_manager.rtp_list_hook = 'vam#ForceUsersAfterDirectoriesToBeLast'
+Plug 'vim-airline/vim-airline'
+Plug 'luochen1990/rainbow'
+Plug 'hashivim/vim-terraform'
+" Plug 'tpope/vim-sleuth'
+Plug 'godlygeek/tabular'
+Plug 'vim-python/python-syntax'
+Plug 'andoriyu/salt-vim'
+Plug 'elzr/vim-json'
+Plug 'rhysd/conflict-marker.vim'
+Plug 'justinmk/vim-matchparenalways'
+" Plug 'airblade/vim-gitgutter'
+Plug 'psycofdj/yaml-path'
+" Plug 'tpope/vim-markdown'
+" Plug 'preservim/vim-markdown'
+" Plug 'gabrielelana/vim-markdown'
 
-  " most used options you may want to use:
-  " let c.log_to_buf = 1
-  " let c.auto_install = 0
-  let &rtp.=(empty(&rtp)?'':',').c.plugin_root_dir.'/vim-addon-manager'
-  if !isdirectory(c.plugin_root_dir.'/vim-addon-manager/autoload')
-    execute '!git clone --depth=1'
-        \       'https://github.com/MarcWeber/vim-addon-manager'
-        \       shellescape(c.plugin_root_dir.'/vim-addon-manager', 1)
-  endif
+call plug#end()
 
-  " This provides the VAMActivate command, you could be passing plugin names, too
-  call vam#ActivateAddons([], {})
-endfun
-call SetupVAM()
-" END VAM setup
-VAMActivate github:vim-airline/vim-airline
-VAMActivate github:luochen1990/rainbow
-VAMActivate github:hashivim/vim-terraform
-""""" VAMActivate github:tpope/vim-sleuth " smart set sw and ts based on what is used in file
-VAMActivate github:godlygeek/tabular
-VAMActivate github:vim-python/python-syntax
-VAMActivate github:andoriyu/salt-vim
-VAMActivate github:elzr/vim-json
-VAMActivate github:rhysd/conflict-marker.vim
-VAMActivate github:justinmk/vim-matchparenalways
-"VAMActivate github:airblade/vim-gitgutter
-VAMActivate github:psycofdj/yaml-path
-" VAMActivate github:tpope/vim-markdown
-" VAMActivate github:preservim/vim-markdown " bad at formatting
-" VAMActivate github:gabrielelana/vim-markdown
+autocmd VimEnter *
+  \  if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
+  \|   PlugInstall --sync | source $MYVIMRC
+  \| endif
 
 
 syntax on

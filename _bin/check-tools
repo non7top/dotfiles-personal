@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\e[1;31m'
+YLW='\e[1;33m'
+GRN='\e[1;32m'
+BLD='\e[1m'
+RST='\e[0m'
+
+missing() { echo -e "  ${RED}✗ missing${RST}  $1"; }
+extra()   { echo -e "  ${YLW}+ extra${RST}    $1"; }
+ok()      { echo -e "  ${GRN}✓ ok${RST}       $1"; }
+
+discrepancies=0
+
+in_ignore() {
+    local pkg="$1" ignore_file="$2"
+    [ -f "$ignore_file" ] && grep -qx "$pkg" "$ignore_file"
+}
+
+# --- pipx ---
+echo -e "\n${BLD}pipx tools${RST} (~/.pipx-tools)"
+if [ ! -f ~/.pipx-tools ]; then
+    echo "  ~/.pipx-tools not found"
+else
+    installed=$(pipx list --short | awk '{print $1}')
+    while IFS= read -r pkg || [ -n "$pkg" ]; do
+        [ -z "$pkg" ] && continue
+        if echo "$installed" | grep -qx "$pkg"; then
+            ok "$pkg"
+        else
+            missing "$pkg"; ((discrepancies++))
+        fi
+    done < ~/.pipx-tools
+    while IFS= read -r pkg; do
+        [ -z "$pkg" ] && continue
+        in_ignore "$pkg" ~/.pipx-ignore && continue
+        if ! grep -qx "$pkg" ~/.pipx-tools; then
+            extra "$pkg"; ((discrepancies++))
+        fi
+    done <<< "$installed"
+fi
+
+# --- npm ---
+echo -e "\n${BLD}npm global tools${RST} (~/.npm-global-tools)"
+if [ ! -f ~/.npm-global-tools ]; then
+    echo "  ~/.npm-global-tools not found"
+else
+    installed=$(npm list -g --depth=0 --json \
+        | jq -r '.dependencies | keys[]')
+    while IFS= read -r pkg || [ -n "$pkg" ]; do
+        [ -z "$pkg" ] && continue
+        if echo "$installed" | grep -qx "$pkg"; then
+            ok "$pkg"
+        else
+            missing "$pkg"; ((discrepancies++))
+        fi
+    done < ~/.npm-global-tools
+    while IFS= read -r pkg; do
+        [ -z "$pkg" ] && continue
+        in_ignore "$pkg" ~/.npm-ignore && continue
+        if ! grep -qx "$pkg" ~/.npm-global-tools; then
+            extra "$pkg"; ((discrepancies++))
+        fi
+    done <<< "$installed"
+fi
+
+# --- asdf ---
+echo -e "\n${BLD}asdf tools${RST} (~/.tool-versions)"
+if [ ! -f ~/.tool-versions ]; then
+    echo "  ~/.tool-versions not found"
+else
+    while IFS=' ' read -r tool version || [ -n "$tool" ]; do
+        [ -z "$tool" ] && continue
+        installed_ver=$(asdf list "$tool" 2>&1 | tr -d ' *' | tail -1 || true)
+        if [ -z "$installed_ver" ]; then
+            missing "$tool $version"; ((discrepancies++))
+        elif [ "$installed_ver" != "$version" ]; then
+            echo -e "  ${YLW}≠ mismatch${RST}  $tool (manifest: $version, installed: $installed_ver)"; ((discrepancies++))
+        else
+            ok "$tool $version"
+        fi
+    done < ~/.tool-versions
+fi
+
+echo ""
+if [ "$discrepancies" -eq 0 ]; then
+    echo -e "${GRN}All tools match their manifests.${RST}"
+else
+    echo -e "${RED}${discrepancies} discrepancy/discrepancies found.${RST}"
+    exit 1
+fi

@@ -1,0 +1,13 @@
+ansible-core
+awslogs
+diff-highlight
+dotfiles
+isort
+jmespath-community-terminal
+pip-review
+pip-tools
+pip-upgrader
+pre-commit
+tox
+vpc-free
+yq

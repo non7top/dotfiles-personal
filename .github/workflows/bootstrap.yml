@@ -1,24 +1,56 @@
-name: Test Bootstrap
+name: Bootstrap
 
 on:
   pull_request:
   schedule:
     - cron: '0 6 * * 1'  # every Monday at 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Run bootstrap
         run: bash bootstrap.sh
 
-      - name: Verify tools
+      - name: Symlink manifests
+        run: |
+          ln -sf "$GITHUB_WORKSPACE/_pipx-tools" ~/.pipx-tools
+          ln -sf "$GITHUB_WORKSPACE/_npm-global-tools" ~/.npm-global-tools
+          ln -sf "$GITHUB_WORKSPACE/_tool-versions" ~/.tool-versions
+          ln -sf "$GITHUB_WORKSPACE/_pipx-ignore" ~/.pipx-ignore
+          ln -sf "$GITHUB_WORKSPACE/_npm-ignore" ~/.npm-ignore
+
+      - name: Check tool manifests
         run: |
           export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
-          asdf version
-          kubectl version --client
-          helm version
-          gh --version
-          k9s version
+          bash _bin/check-tools
+
+      - name: Install vim
+        run: sudo apt-get install -y vim
+
+      - name: Symlink vim config
+        run: |
+          ln -sf "$GITHUB_WORKSPACE/_vimrc" ~/.vimrc
+          ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
+
+      - name: Install vim plugins
+        run: vim -u ~/.vimrc -i NONE -c "PlugInstall --sync" -c "qa" < /dev/null
+
+      - name: Verify vim plugins
+        run: |
+          PLUGIN_DIR="$HOME/.vim/plugged"
+          FAILED=0
+          while IFS= read -r plugin; do
+            dir="${PLUGIN_DIR}/$(basename "$plugin")"
+            if [ -d "$dir" ]; then
+              echo "✓ $plugin"
+            else
+              echo "✗ $plugin (not found)"
+              FAILED=1
+            fi
+          done < <(grep "^Plug '" "$GITHUB_WORKSPACE/_vimrc" | sed "s/Plug '//;s/'.*//")
+          exit $FAILED
