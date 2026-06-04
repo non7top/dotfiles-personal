@@ -38,7 +38,7 @@ jobs:
           ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
 
       - name: Install vim plugins
-        run: vim --headless +PlugInstall +qall 2>&1
+        run: vim -E -s -u ~/.vimrc +PlugInstall +qall
 
       - name: Verify vim plugins
         run: |
