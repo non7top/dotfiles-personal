@@ -37,21 +37,20 @@ jobs:
           ln -sf "$GITHUB_WORKSPACE/_vimrc" ~/.vimrc
           ln -sf "$GITHUB_WORKSPACE/_vim" ~/.vim
 
-      - name: Install vim plugins via VAM
-        run: vim --headless -c 'qall' 2>&1 || true
+      - name: Install vim plugins
+        run: vim --headless +PlugInstall +qall 2>&1
 
       - name: Verify vim plugins
         run: |
-          PLUGIN_DIR="$GITHUB_WORKSPACE/_vim/vim-addons"
+          PLUGIN_DIR="$HOME/.vim/plugged"
           FAILED=0
-          while IFS= read -r line; do
-            plugin=$(echo "$line" | sed 's/VAMActivate github://')
-            dir="${PLUGIN_DIR}/github-$(echo "$plugin" | sed 's|/|-|g')"
+          while IFS= read -r plugin; do
+            dir="${PLUGIN_DIR}/$(basename "$plugin")"
             if [ -d "$dir" ]; then
               echo "✓ $plugin"
             else
-              echo "✗ $plugin (not found at $dir)"
+              echo "✗ $plugin (not found)"
               FAILED=1
             fi
-          done < <(grep '^VAMActivate github:' "$GITHUB_WORKSPACE/_vimrc")
+          done < <(grep "^Plug '" "$GITHUB_WORKSPACE/_vimrc" | sed "s/Plug '//;s/'.*//")
           exit $FAILED
