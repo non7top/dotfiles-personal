@@ -4,8 +4,9 @@ repos:
   hooks:
   - id: check-yaml
     args: [--allow-multiple-documents]
-    exclude: ^(k8s/deploy/charts|apps/beacon/chart)/templates/
+    exclude: ^(k8s/deploy/charts|apps/beacon/chart|helm/.+/templates)/|^helmfile\.yaml$
   - id: end-of-file-fixer
+    exclude: \.dat$
   - id: trailing-whitespace
     args: [--markdown-linebreak-ext=md]
   - id: check-json
