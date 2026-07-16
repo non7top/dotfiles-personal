@@ -2,8 +2,16 @@
 ignore = [
     '.git',
     '.gitignore',
+    '.github',
+    '.dotfilesrc',
+    '.claude',
+    '.pre-commit-config.yaml',
+    'bootstrap.sh',
     '*.swp',
     'LICENSE',
     'README.rst'
     ]
 prefix = _
+packages = [
+    'claude',
+    ]
