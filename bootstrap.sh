@@ -3,9 +3,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-info()    { echo -e "\e[1;34m==>\e[0m $*"; }
-success() { echo -e "\e[1;32m  ✓\e[0m $*"; }
-die()     { echo -e "\e[1;31m  ✗\e[0m $*" >&2; exit 1; }
+RED=$'\e[1;31m'
+GREEN=$'\e[1;32m'
+YELLOW=$'\e[1;33m'
+BLUE=$'\e[1;34m'
+RESET=$'\e[0m'
+
+info()    { echo -e "${BLUE}==>${RESET} $*"; }
+success() { echo -e "${GREEN}  ✓${RESET} $*"; }
+warn()    { echo -e "${YELLOW}  !${RESET} $*" >&2; }
+die()     { echo -e "${RED}  ✗${RESET} $*" >&2; exit 1; }
 
 # Install pipx
 if command -v pipx &>/dev/null; then
@@ -43,7 +50,7 @@ while IFS=' ' read -r tool _version; do
         echo -n "  adding ${tool}... "
         plugin_url=$(grep "^${tool} " "$SCRIPT_DIR/_asdf-plugin-sources" 2>/dev/null | awk '{print $2}' || true)
         if asdf plugin add "$tool" $plugin_url; then
-            echo -e "\e[1;32mdone\e[0m"
+            echo -e "${GREEN}done${RESET}"
         else
             die "failed to add plugin ${tool}"
         fi
@@ -55,6 +62,58 @@ asdf install
 . "$SCRIPT_DIR/_bashrc"
 success "All tools installed"
 
+# helm plugin self-registration silently fails during asdf install (helm shim not yet active)
+if command -v helm &>/dev/null; then
+    for hp in helm-diff helm-git; do
+        asdf plugin list 2>/dev/null | grep -q "^${hp}$" || continue
+        plugin_name="${hp/helm-/}"  # helm-diff -> diff, helm-git -> git
+        if ! helm plugin list 2>/dev/null | grep -q "^${plugin_name}[[:space:]]"; then
+            info "Registering helm plugin ${hp}..."
+            helm plugin install "$(asdf where "$hp")" 2>/dev/null || \
+            helm plugin install "$(asdf where "$hp")/${hp}" 2>/dev/null || true
+            success "${hp} registered"
+        else
+            success "${hp} already registered"
+        fi
+    done
+else
+    warn "helm not found, skipping helm plugin registration"
+fi
+
+# Install krew plugins
+if command -v krew &>/dev/null; then
+    info "Installing krew plugins..."
+    krew update
+    while IFS= read -r plugin || [ -n "$plugin" ]; do
+        [ -z "$plugin" ] && continue
+        if krew list 2>/dev/null | grep -qw "$plugin"; then
+            success "krew plugin ${plugin} already installed"
+        else
+            echo -n "  installing ${plugin}... "
+            krew install "$plugin" && echo -e "${GREEN}done${RESET}"
+        fi
+    done < "$SCRIPT_DIR/_krew-plugins"
+else
+    warn "krew not found, skipping krew plugins"
+fi
+
+# Install gh extensions
+if command -v gh &>/dev/null; then
+    info "Installing gh extensions..."
+    while IFS= read -r ext || [ -n "$ext" ]; do
+        [ -z "$ext" ] && continue
+        ext_name="${ext##*/}"
+        if gh extension list 2>/dev/null | grep -qw "$ext_name"; then
+            success "gh extension ${ext_name} already installed"
+        else
+            echo -n "  installing ${ext}... "
+            gh extension install "$ext" && echo -e "${GREEN}done${RESET}"
+        fi
+    done < "$SCRIPT_DIR/_gh-extensions"
+else
+    warn "gh not found, skipping gh extensions"
+fi
+
 # Install pipx tools
 info "Installing pipx tools..."
 while IFS= read -r pkg || [ -n "$pkg" ]; do
@@ -63,7 +122,7 @@ while IFS= read -r pkg || [ -n "$pkg" ]; do
         success "${pkg} already installed"
     else
         echo -n "  installing ${pkg}... "
-        pipx install "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
+        pipx install "$pkg" --quiet && echo -e "${GREEN}done${RESET}"
     fi
 done < "$SCRIPT_DIR/_pipx-tools"
 
@@ -72,7 +131,7 @@ info "Installing npm global tools..."
 while IFS= read -r pkg || [ -n "$pkg" ]; do
     [ -z "$pkg" ] && continue
     echo -n "  installing ${pkg}... "
-    npm install -g "$pkg" --quiet && echo -e "\e[1;32mdone\e[0m"
+    npm install -g "$pkg" --quiet && echo -e "${GREEN}done${RESET}"
 done < "$SCRIPT_DIR/_npm-global-tools"
 
 # Install vim-plug

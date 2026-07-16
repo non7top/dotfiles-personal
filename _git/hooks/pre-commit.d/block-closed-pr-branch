@@ -1,0 +1,47 @@
+#!/bin/bash
+# Block commits to branches whose remote has been deleted or whose PR is closed/merged.
+
+set -euo pipefail
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+
+# Skip detached HEAD and main development branches
+if [[ -z "$CURRENT_BRANCH" || "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" || "$CURRENT_BRANCH" == "develop" ]]; then
+    exit 0
+fi
+
+# If no upstream is configured the branch hasn't been pushed yet — safe to commit
+if ! git rev-parse --abbrev-ref "${CURRENT_BRANCH}@{upstream}" &>/dev/null; then
+    exit 0
+fi
+
+# Refresh remote tracking refs quietly
+git fetch origin --prune &>/dev/null || true
+
+# Block if the remote branch was deleted
+if [[ -z "$(git ls-remote --heads origin "$CURRENT_BRANCH" 2>/dev/null)" ]]; then
+    echo "Commit blocked: remote branch 'origin/$CURRENT_BRANCH' no longer exists." >&2
+    echo "Switch to a new branch before committing." >&2
+    exit 1
+fi
+
+# gh check is advisory — missing or unauthenticated gh is a warning, not a hard failure
+if ! command -v gh &>/dev/null; then
+    echo "Warning: 'gh' not found; skipping closed-PR check." >&2
+    exit 0
+fi
+
+if ! gh auth status &>/dev/null; then
+    echo "Warning: 'gh' is not authenticated; skipping closed-PR check." >&2
+    exit 0
+fi
+
+PR_STATE=$(gh pr list --head "$CURRENT_BRANCH" --state closed --json state --jq '.[0].state' 2>/dev/null || true)
+
+if [[ "$PR_STATE" == "CLOSED" || "$PR_STATE" == "MERGED" ]]; then
+    echo "Commit blocked: branch '$CURRENT_BRANCH' has a ${PR_STATE} pull request." >&2
+    echo "Create a new branch for your changes." >&2
+    exit 1
+fi
+
+exit 0

@@ -21,7 +21,7 @@ fi
 exec 1>&2
 
 
-for DIR in `exec git diff --cached --name-status $against | awk '$1 != "R" { print $2 }' | xargs -n1 dirname | xargs -n1 realpath`; do
+for DIR in `exec git diff --cached --name-status $against | awk '$1 != "R" { print $2 }' | xargs -rn1 dirname | xargs -rn1 realpath`; do
 	if [ -f "$DIR/.terraform-docs.yml" ]; then
 	    cd "$DIR"
 	    docker run --rm --volume "$(pwd):/terraform-docs" -u $(id -u) quay.io/terraform-docs/terraform-docs:0.18.0 markdown /terraform-docs

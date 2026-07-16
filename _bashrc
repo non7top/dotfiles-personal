@@ -110,7 +110,11 @@ else
     export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
 fi
 
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
 alias gcd='cd $(git root)'
+alias k='kubectl'
+alias helmfile='helmfile --interactive'
 
 function jsonArrayToTable(){
      jq -r '(.[0] | ([keys[] | .] |(., map(length*"-")))), (.[] | ([keys[] as $k | .[$k]])) | @tsv' | column -t -s $'\t'
@@ -124,3 +128,5 @@ export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken');
 }
 
 #export TMPDIR=${TMPDIR:-/tmp}
+
+export COLORTERM=truecolor

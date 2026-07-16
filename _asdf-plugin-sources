@@ -1,1 +1,9 @@
+act https://github.com/gr1m0h/asdf-act
+antigravity-cli https://github.com/modestman/asdf-antigravity-cli
+cosign https://github.com/non7top/asdf-cosign
+helm-diff https://github.com/dex4er/asdf-helm-diff
+helm-git https://github.com/non7top/asdf-helm-git
+krew https://github.com/bjw-s/asdf-krew
+kustomize https://github.com/Banno/asdf-kustomize.git
+kyverno-cli https://github.com/hobaen/asdf-kyverno-cli
 ripsecrets https://github.com/boris-smidt-klarrio/asdf-ripsecrets

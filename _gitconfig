@@ -25,6 +25,8 @@
 [alias]
   cd = !git checkout $(git sd)
   sd = !git rev-parse --abbrev-ref origin/HEAD|sed -e "s#origin/##"
+  ; re-syncs origin/HEAD and this branch's upstream after the remote's default branch changed -- fixes "my branch tracking got confused" situations
+  fix-origin = "!b=$(git branch --show-current); git remote set-head origin --auto && git branch --set-upstream-to=origin/$b $b"
   diffc = diff --cached
   pu = pull upstream HEAD --tags
   root = rev-parse --show-toplevel
@@ -33,6 +35,11 @@
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
   pr = "!f() { git fetch -fu ${2:-$(git remote |grep ^upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
   pr-clean = "!git for-each-ref refs/heads/pr/* --format=\"%(refname)\" | while read ref ; do branch=${ref#refs/heads/} ; git branch -D $branch ; done"
+  ; local-only guard: blocks direct `git push` on the current branch (sets pushRemote to a nonexistent remote name)
+  bork = !git config branch.$(git branch --show-current).pushRemote no-direct-push && echo "💥 Borked! Pushes to $(git branch --show-current) are now locally blocked."
+  ; lists branches currently guarded by `bork`
+  show-bork = "!f() { echo \"🔒 Currently borked branches:\"; git config --get-regexp \"branch\\..*\\.pushremote\" || echo \"  None! All branches are open to push.\"; }; f"
+  ignored = status --ignored
 
 [pager]
   log = diff-highlight | less
@@ -47,3 +54,14 @@
 	hooksPath = ~/.git/hooks/
 [init]
 	defaultBranch = master
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential

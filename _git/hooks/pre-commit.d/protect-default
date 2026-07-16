@@ -7,6 +7,12 @@ set -o pipefail
 
 curr_branch=$(git symbolic-ref HEAD|sed -e 's#refs/heads/##')
 def_branch=$(git sd)
+if [ -z "$def_branch" ]; then
+    if git remote | grep -q .; then
+        echo "protect-default: could not determine default branch (run: git remote set-head origin --auto)" >&2
+    fi
+    exit 0
+fi
 if [ "x$curr_branch" = "x$def_branch" ]; then
     echo "pre-commit hook: Can not commit to the local default branch."
     exit 1
