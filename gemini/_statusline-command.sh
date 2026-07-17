@@ -28,9 +28,9 @@ p3pwk_pct=$(echo "$input"      | jq -r '(1 - (.quota["3p-weekly"].remaining_frac
 p3pwk_resets_in=$(echo "$input" | jq -r '.quota["3p-weekly"].reset_in_seconds // 0')
 
 gem5h_reset_str=$(sl_fmt_reset "$gem5h_resets_in")
-gemwk_reset_str=$(sl_fmt_workdays "$gemwk_resets_in")
+gemwk_reset_str=$(sl_fmt_days "$gemwk_resets_in")
 p3p5h_reset_str=$(sl_fmt_reset "$p3p5h_resets_in")
-p3pwk_reset_str=$(sl_fmt_workdays "$p3pwk_resets_in")
+p3pwk_reset_str=$(sl_fmt_days "$p3pwk_resets_in")
 
 ctx_color=$(sl_color_for_pct "$ctx_pct" 70 80 "$sl_green")
 gem5h_color=$(sl_color_for_pct "$gem5h_pct" 50 80 "$sl_cyan")

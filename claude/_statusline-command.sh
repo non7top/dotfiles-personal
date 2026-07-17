@@ -18,7 +18,7 @@ cwd=$(echo "$input"            | jq -r '.cwd // ""')
 
 now=$(date +%s)
 reset_str=$(sl_fmt_reset $(( resets_at - now )))
-week_reset_str=$(sl_fmt_workdays $(( week_resets_at - now )))
+week_reset_str=$(sl_fmt_days $(( week_resets_at - now )))
 
 ctx_color=$(sl_color_for_pct "$ctx_pct" 70 80 "$sl_green")
 sess_color=$(sl_color_for_pct "$sess_pct" 50 80 "$sl_cyan")

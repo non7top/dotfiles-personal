@@ -54,25 +54,22 @@ sl_fmt_reset() {
     fi
 }
 
-# Work-days (Mon-Fri) until a count of seconds remaining.
-sl_fmt_workdays() {
+# "XdYh" / "XdY" (calendar days + hours, no weekend-skipping) or
+# falls back to sl_fmt_reset's "Xh"/"Ym" for spans under a day, from a
+# count of seconds remaining.
+sl_fmt_days() {
     local secs_left=$1
     if [ "$secs_left" -le 0 ]; then
         echo "now"
         return
     fi
-    local now
-    now=$(date +%s)
-    local target=$(( now + secs_left ))
-    local wd=0
-    local cur=$now
-    while [ "$cur" -lt "$target" ]; do
-        local dow
-        dow=$(date -d "@$cur" +%u 2>/dev/null || date -r "$cur" +%u 2>/dev/null)
-        [ "$dow" -lt 6 ] && wd=$(( wd + 1 ))
-        cur=$(( cur + 86400 ))
-    done
-    [ "$wd" -eq 1 ] && echo "${wd} day" || echo "${wd} days"
+    local d=$(( secs_left / 86400 ))
+    if [ "$d" -eq 0 ]; then
+        sl_fmt_reset "$secs_left"
+        return
+    fi
+    local h=$(( (secs_left % 86400) / 3600 ))
+    [ "$h" -gt 0 ] && echo "${d}d${h}h" || echo "${d}d"
 }
 
 # Git segment: "<dirname> [<branch>] +N -M" or "not in git repo".
