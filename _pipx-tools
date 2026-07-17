@@ -1,7 +1,6 @@
 ansible-core
 awslogs
 diff-highlight
-dotfiles
 isort
 jmespath-community-terminal
 pip-review

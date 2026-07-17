@@ -1,0 +1,16 @@
+name: Dotfiles config check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check dotfiles prefix/ignore/package consistency
+        run: python3 .github/scripts/check_dotfiles_config.py

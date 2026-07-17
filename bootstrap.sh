@@ -126,6 +126,14 @@ while IFS= read -r pkg || [ -n "$pkg" ]; do
     fi
 done < "$SCRIPT_DIR/_pipx-tools"
 
+# Install `dotfiles` from our fork (upstream PyPI has an unfixed
+# prefix-stripping bug -- see non7top/dotfiles-personal#24). Always
+# force-reinstall so a previously PyPI-installed copy gets replaced;
+# --force is fast/idempotent so this is safe on every run.
+info "Installing dotfiles (patched fork)..."
+pipx install --force "git+https://github.com/non7top/dotfiles.git" --quiet
+success "dotfiles installed from non7top/dotfiles@main"
+
 # Install npm global tools
 info "Installing npm global tools..."
 while IFS= read -r pkg || [ -n "$pkg" ]; do
