@@ -18,7 +18,8 @@ spinning up on every Claude Code session everywhere.
 
    ```bash
    claude mcp add --transport stdio puppeteer --scope project \
-     -- docker run -i --rm --shm-size=2g mcp/puppeteer
+     -- docker run -i --rm --user node -e HOME=/home/node \
+     -e DOCKER_CONTAINER=true --shm-size=2g mcp/puppeteer
    ```
 
    This creates or updates `./.mcp.json` with:
@@ -28,11 +29,29 @@ spinning up on every Claude Code session everywhere.
      "mcpServers": {
        "puppeteer": {
          "command": "docker",
-         "args": ["run", "-i", "--rm", "--shm-size=2g", "mcp/puppeteer"]
+         "args": ["run", "-i", "--rm", "--user", "node",
+                  "-e", "HOME=/home/node", "-e", "DOCKER_CONTAINER=true",
+                  "--shm-size=2g", "mcp/puppeteer"]
        }
      }
    }
    ```
+
+   The container must not run as root (the image's default). The flags
+   that make non-root work, all required except `HOME`:
+
+   - `--user node` — the image's built-in non-root user (uid 1000).
+     Host-uid matching isn't needed here: nothing is bind-mounted.
+   - `-e DOCKER_CONTAINER=true` — makes the server launch Chromium with
+     `--no-sandbox`. Without it, Chromium's sandbox tries to create
+     namespaces, which the container forbids for a non-root user, and
+     every browser launch dies with "Failed to move to new namespace".
+     (As root the sandbox is skipped anyway, which is why the old
+     root-based command worked without this.)
+   - `-e HOME=/home/node` — `docker run --user` does not set `$HOME`,
+     leaving it `/`. Puppeteer itself keeps its profile in `/tmp` so
+     this isn't strictly required, but an unwritable `$HOME` is a known
+     source of Chromium quirks and the correct value is free.
 
 3. Tell the user: project-scoped servers require a one-time approval —
    Claude Code will prompt to trust `.mcp.json` the next time the session
