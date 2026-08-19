@@ -7,6 +7,10 @@ ignore = [
     '.claude',
     '.pre-commit-config.yaml',
     'bootstrap.sh',
+    'Makefile',
+    'Dockerfile*',
+    'docker-compose.yml',
+    'tests',
     '*.swp',
     'LICENSE',
     'README.rst'

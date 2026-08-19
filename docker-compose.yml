@@ -1,0 +1,25 @@
+services:
+  test:
+    build: .
+    image: dotfiles-test
+    # Non-root; uid/gid passed in by the Makefile so nothing in the
+    # container ever writes as root (repo is ro anyway, HOME is /tmp).
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - .:/repo:ro
+    working_dir: /repo
+    command: /repo/tests/test-sync.sh
+
+  bootstrap:
+    build:
+      context: .
+      dockerfile: Dockerfile.bootstrap
+    image: dotfiles-bootstrap-test
+    # No user: override — the image's non-root 'ubuntu' user (with sudo)
+    # is the point: bootstrap.sh must work on a fresh machine as a user.
+    volumes:
+      - .:/repo:ro
+    working_dir: /repo
+    command: /repo/tests/test-bootstrap.sh
