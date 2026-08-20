@@ -1,3 +1,5 @@
 _vim/.netrwhist
 _vim/vim-addons
 _vim/plugged
+_vim/autoload/plug.vim
+_git/info/exclude
