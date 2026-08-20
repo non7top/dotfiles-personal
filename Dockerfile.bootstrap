@@ -1,0 +1,15 @@
+# Fresh-machine emulation for testing bootstrap.sh (make test-bootstrap).
+# Matches the README quick-start baseline: a plain Ubuntu box with git,
+# curl, and a non-root user who has passwordless sudo.
+FROM ubuntu:24.04
+
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends sudo git curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ubuntu:24.04 ships a non-root 'ubuntu' user (uid 1000); bootstrap.sh
+# needs sudo for its apt-get calls, like a real user's first run.
+RUN echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ubuntu
+
+USER ubuntu
+WORKDIR /repo

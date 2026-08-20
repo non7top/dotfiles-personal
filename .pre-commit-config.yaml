@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check-dotfiles-config
+        name: check dotfiles prefix/ignore/package consistency
+        entry: python3 .github/scripts/check_dotfiles_config.py
+        language: system
+        pass_filenames: false
+        always_run: true

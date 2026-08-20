@@ -17,7 +17,7 @@ Files are managed with `dotfiles <https://github.com/jbernard/dotfiles>`_ using 
 
 .. code-block:: bash
 
-    sudo apt install -y git curl && git clone git@github.com:non7top/dotfiles.git ~/Dotfiles && cd ~/Dotfiles && ./bootstrap.sh
+    sudo apt install -y git curl && git clone git@github.com:non7top/dotfiles-personal.git ~/Dotfiles && cd ~/Dotfiles && ./bootstrap.sh
 
 ``bootstrap.sh`` will:
 
