@@ -94,8 +94,24 @@ function _prompt_visible_len() {
     echo "${#s}"
 }
 
+# Multi-session history: histappend stops the last-exiting session from
+# overwriting ~/.bash_history; `history -a` in build_prompt appends each
+# command as soon as it finishes, so parallel (or crashed) sessions all
+# land in the file. A new session reads everything written before it
+# started; a running session deliberately does NOT pull in other
+# sessions' commands live (add `history -n` next to `history -a` for that).
+shopt -s histappend
+HISTSIZE=100000
+# lines, not bytes: ~1M lines of avg ~20-25B (command + timestamp line
+# per entry) keeps the file around 20MB
+HISTFILESIZE=1000000
+HISTCONTROL=ignoreboth
+HISTTIMEFORMAT='%F %T '
+
 function build_prompt() {
     local ret=$?
+    # after ret: history -a would clobber $? for the error segment
+    history -a
 
     local err_seg=""
     if [ "$ret" -gt 0 ] && [ "$ret" -ne 130 ]; then
