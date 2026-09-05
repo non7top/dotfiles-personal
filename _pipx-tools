@@ -1,4 +1,5 @@
 ansible-core
+apt-wrapper
 awslogs
 diff-highlight
 isort
