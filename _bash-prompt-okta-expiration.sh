@@ -5,7 +5,7 @@ function okta_expiration_prompt() {
   elif [ -f ~/.aws/credentials ]; then
     okta_expiration_prompt_old
   else
-    echo -e " \e[31mOKTA:!!\e[39m "
+    echo " \[\e[31m\]OKTA:!!\[\e[39m\] "
   fi
 }
 
@@ -36,7 +36,7 @@ function okta_expiration_prompt_new() {
     clr=92
   fi
 
-  echo -e " \e[${clr}mOKTA:$e\e[39m "
+  echo " \[\e[${clr}m\]OKTA:$e\[\e[39m\] "
 }
 
 function okta_expiration_prompt_old() {
@@ -55,5 +55,5 @@ function okta_expiration_prompt_old() {
     clr=92
   fi
 
-  echo -e " \e[${clr}mOKTA:$e\e[39m "
+  echo " \[\e[${clr}m\]OKTA:$e\[\e[39m\] "
 }
