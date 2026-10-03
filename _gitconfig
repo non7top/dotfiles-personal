@@ -40,6 +40,7 @@
   ; lists branches currently guarded by `bork`
   show-bork = "!f() { echo \"🔒 Currently borked branches:\"; git config --get-regexp \"branch\\..*\\.pushremote\" || echo \"  None! All branches are open to push.\"; }; f"
   ignored = status --ignored
+  redefault = !git fetch origin && git remote set-head origin --auto && git cd
 
 [pager]
   log = diff-highlight | less
