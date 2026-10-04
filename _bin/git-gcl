@@ -6,17 +6,164 @@
 # 1. Prune remote branches when they are deleted or merged
 # 2. Remove local branches when their remote branches are removed
 # 3. Remove local branches when a master included squash and merge commits
+#
+# Linked worktrees whose branch is merged or squash-merged are removed first,
+# otherwise their branches cannot be deleted. Dirty and locked worktrees, and
+# ones mid-rebase/merge/bisect, are skipped. So are worktrees holding ignored
+# files that are not known to be regenerable, unless -f is given.
+#
+# Usage: git gcl [-n] [-f]
+#   -n  dry run, only list what would be removed (previews -r too)
+#   -f  also remove worktrees holding non-regenerable ignored files
+#   -r  also delete merged and squash-merged branches on origin
+
+DRY_RUN=0
+FORCE=0
+REMOTE_DELETE=0
+while getopts nfr opt; do
+  case $opt in
+    n) DRY_RUN=1 ;;
+    f) FORCE=1 ;;
+    r) REMOTE_DELETE=1 ;;
+    *) echo "usage: git gcl [-n] [-f] [-r]" >&2; exit 2 ;;
+  esac
+done
+
+# Ignored entries (by basename) that are safe to lose with a worktree
+REGENERABLE='node_modules __pycache__ .venv build dist target .pytest_cache .terraform vendor .phpunit.result.cache'
+
+if [[ -t 1 && -z ${NO_COLOR:-} ]]; then
+  C_BOLD=$'\e[1m' C_DIM=$'\e[2m' C_GREEN=$'\e[32m' C_YELLOW=$'\e[33m' C_OFF=$'\e[0m'
+fi
+
+function say_start() { echo "${C_BOLD}$*${C_OFF}"; }
+function say_finish() { echo "${C_DIM}$*${C_OFF}"; }
+function say_skip() { echo "${C_YELLOW}$*${C_OFF}"; }
+function say_note() { echo "${C_DIM}$*${C_OFF}"; }
+
+# Runs a mutating command, or only prints it in dry-run mode
+function act() {
+  if [[ $DRY_RUN == 1 ]]; then echo "${C_GREEN}would run: $*${C_OFF}"; else "$@"; fi
+}
 
 function git_prune_remote() {
-  echo "Start removing out-dated remote merged branches"
-  git fetch --prune
-  echo "Finish removing out-dated remote merged branches"
+  say_start "Start removing out-dated remote merged branches"
+  act git fetch --prune
+  say_finish "Finish removing out-dated remote merged branches"
+}
+
+# Branches already handled or reported, so later steps don't repeat them
+declare -A REPORTED
+# Branches whose worktree was (or, in dry run, would be) removed
+declare -A WORKTREE_REMOVED
+
+function branch_worktree() {
+  [[ -n ${WORKTREE_REMOVED[$1]} ]] || git for-each-ref --format='%(worktreepath)' "refs/heads/$1"
 }
 
 function git_remove_merged_local_branch() {
-  echo "Start removing out-dated local merged branches"
-  git branch --merged | egrep -v "(^\*|$(git sd)|ANY_BRANCH_YOU_WANT_TO_EXCLUDE)" | xargs -I % git branch -d %
-  echo "Finish removing out-dated local merged branches"
+  say_start "Start removing out-dated local merged branches"
+  local default line mark branch
+  default=$(git sd)
+  while IFS= read -r line; do
+    mark=${line:0:2} branch=${line:2}
+    [[ $branch == "$default" ]] && continue
+    case $mark in
+      "* ") say_skip "Skip branch $branch: current branch"; REPORTED[$branch]=1 ;;
+      "+ ")
+        if [[ -n ${WORKTREE_REMOVED[$branch]} ]]; then
+          act git branch -d "$branch" && REPORTED[$branch]=1
+        else
+          say_skip "Skip branch $branch: checked out in $(branch_worktree "$branch")"; REPORTED[$branch]=1
+        fi ;;
+      *) act git branch -d "$branch" && REPORTED[$branch]=1 ;;
+    esac
+  done < <(git branch --merged)
+  say_finish "Finish removing out-dated local merged branches"
+}
+
+# $1=ref $2=base (default: the default branch)
+function is_squash_merged() {
+  local branch=$1 base=${2:-$(git sd)} ancestor
+  ancestor=$(git merge-base "$base" "$branch") &&
+    [[ $(git cherry "$base" "$(git commit-tree "$(git rev-parse "$branch^{tree}")" -p "$ancestor" -m _)") == "-"* ]]
+}
+
+# A mid-rebase worktree looks detached at an old, "merged" commit
+function worktree_in_progress() {
+  local gd name
+  gd=$(git -C "$1" rev-parse --absolute-git-dir)
+  for name in rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD BISECT_LOG; do
+    [[ -e $gd/$name ]] && return 0
+  done
+  return 1
+}
+
+# Prints the ignored top-level entries of worktree $1 that are not regenerable
+function worktree_ignored_files() {
+  local line entry pat skip
+  git -C "$1" status --porcelain --ignored=matching | while IFS= read -r line; do
+    [[ $line == "!! "* ]] || continue
+    entry=${line#!! }
+    entry=$(basename "$entry")
+    skip=0
+    for pat in $REGENERABLE; do
+      # shellcheck disable=SC2254
+      case $entry in $pat) skip=1 ;; esac
+    done
+    [[ $skip == 1 ]] || echo "$entry"
+  done
+}
+
+# $1=path $2=branch (empty if detached) $3=HEAD sha $4=locked(1|"")
+function git_maybe_remove_worktree() {
+  local path=$1 branch=$2 head=$3 locked=$4 default current ref ignored
+  default=$(git sd)
+  current=$(git rev-parse --show-toplevel)
+  ref=${branch:-$head}
+  [[ -z $ref || ! -d $path ]] && return
+  if ! git merge-base --is-ancestor "$ref" "$default" && ! is_squash_merged "$ref"; then
+    say_skip "Skip worktree $path (${branch:-detached $head}): not merged"
+    return
+  fi
+  ref=${branch:-detached $head}
+  if [[ -n $locked ]]; then
+    say_skip "Skip worktree $path ($ref): locked"
+  elif worktree_in_progress "$path"; then
+    say_skip "Skip worktree $path ($ref): rebase, merge, cherry-pick or bisect in progress"
+  elif [[ -n $(git -C "$path" status --porcelain) ]]; then
+    say_skip "Skip worktree $path ($ref): uncommitted or untracked files"
+  elif [[ $FORCE == 0 ]] && ignored=$(worktree_ignored_files "$path") && [[ -n $ignored ]]; then
+    say_skip "Skip worktree $path ($ref): ignored files, use -f to remove: $(echo $ignored)"
+  else
+    if [[ $path == "$current" ]]; then
+      say_note "Removing the current worktree: run 'cd $MAIN_WORKTREE' afterwards"
+      [[ $DRY_RUN == 1 ]] || cd "$MAIN_WORKTREE"
+    fi
+    act git worktree remove "$path"
+    [[ -z $branch ]] || WORKTREE_REMOVED[$branch]=1
+    say_note "Note: Claude Code transcripts for $path stay under ~/.claude/projects/ but no longer show in this repo's resume list"
+  fi
+}
+
+function git_remove_merged_worktrees() {
+  say_start "Start removing merged worktrees"
+  local line path branch head locked first=1
+  while IFS= read -r line; do
+    case $line in
+      "worktree "*) path=${line#worktree } ;;
+      "HEAD "*) head=${line#HEAD } ;;
+      "branch refs/heads/"*) branch=${line#branch refs/heads/} ;;
+      locked*) locked=1 ;;
+      "")
+        # first entry is the main checkout
+        if [[ $first == 1 ]]; then MAIN_WORKTREE=$path; else git_maybe_remove_worktree "$path" "$branch" "$head" "$locked"; fi
+        first=0 path= branch= head= locked=
+        ;;
+    esac
+  done < <(git worktree list --porcelain; echo)
+  act git worktree prune
+  say_finish "Finish removing merged worktrees"
 }
 
 # When we use `Squash and merge` on GitHub,
@@ -29,24 +176,60 @@ function git_remove_merged_local_branch() {
 # the contents in local and remote are different. As a result,
 # This clean up function cannot remove local squash-merged branch.
 function git_remove_squash_merged_local_branch() {
-  echo "Start removing out-dated local squash-merged branches"
-  git cd &&
-    git for-each-ref refs/heads/ "--format=%(refname:short)" |
-    while read branch; do
-      ancestor=$(git merge-base $(git sd) $branch) &&
-        [[ $(git cherry $(git sd) $(git commit-tree $(git rev-parse $branch^{tree}) -p $ancestor -m _)) == "-"* ]] &&
-        git branch -D $branch
-    done
-  echo "Finish removing out-dated local squash-merged branches"
+  say_start "Start removing out-dated local squash-merged branches"
+  local default branch wt
+  default=$(git sd)
+  if ! act git cd; then
+    say_skip "Skip squash-merged branch check: cannot switch to $default"
+    say_finish "Finish removing out-dated local squash-merged branches"
+    return
+  fi
+  while read -r branch; do
+    [[ $branch == "$default" || -n ${REPORTED[$branch]} ]] && continue
+    if ! is_squash_merged "$branch"; then
+      say_skip "Skip branch $branch: not merged"
+    elif wt=$(branch_worktree "$branch") && [[ -n $wt ]]; then
+      say_skip "Skip branch $branch: checked out in $wt"
+    else
+      act git branch -D "$branch"
+    fi
+  done < <(git for-each-ref refs/heads/ "--format=%(refname:short)")
+  say_finish "Finish removing out-dated local squash-merged branches"
+}
+
+# Compared against origin/<default>, not the local default, so only branches
+# whose work is on the remote default get deleted.
+function git_remove_merged_remote_branches() {
+  local default base branch
+  if [[ $REMOTE_DELETE == 1 ]]; then
+    say_start "Start removing merged remote branches"
+  else
+    say_start "Start removing merged remote branches (preview only, needs -r)"
+  fi
+  default=$(git sd)
+  base=origin/$default
+  while read -r branch; do
+    [[ $branch == "HEAD" || $branch == "$default" ]] && continue
+    if [[ $(git rev-parse "origin/$branch") == "$(git rev-parse "$base")" ]]; then
+      say_skip "Skip remote branch $branch: no commits of its own"
+    elif git merge-base --is-ancestor "origin/$branch" "$base" || is_squash_merged "origin/$branch" "$base"; then
+      act git push origin --delete "$branch"
+    else
+      say_skip "Skip remote branch $branch: not merged"
+    fi
+  done < <(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin/)
+  say_finish "Finish removing merged remote branches"
 }
 
 # Clean up remote and local branches
 function gcl() {
   git_prune_remote
+  git_remove_merged_worktrees
   git_remove_merged_local_branch
   git_remove_squash_merged_local_branch
+  if [[ $REMOTE_DELETE == 1 || $DRY_RUN == 1 ]]; then git_remove_merged_remote_branches; fi
 }
 
 gcl
 
-git gc
+act git gc
