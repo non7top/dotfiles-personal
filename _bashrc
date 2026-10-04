@@ -47,19 +47,22 @@ function app_prompt_k8s() {
   if [ ! -z $KUBECONFIG ]; then
       # context namespace
       k8s_cluster_name=$(kubectl config view --minify --output 'jsonpath={.contexts[0].name}'|sed -e 's/eks_k8s-//' -e 's/-eks-cluster//')
-      k8s_prompt="$(echo -e "\e[34m")$k8s_cluster_name${RESET}"
+      k8s_prompt="\[\e[34m\]$k8s_cluster_name${RESET}"
       k8s_ns=$(kubectl config view --minify --output 'jsonpath={..namespace}')
       if [ ! -z $k8s_ns ]; then
-          k8s_prompt="${k8s_prompt}$(echo -e "\e[44m")[${k8s_ns}]${RESET}"
+          k8s_prompt="${k8s_prompt}\[\e[44m\][${k8s_ns}]${RESET}"
       fi
-      echo -e "$k8s_prompt"
+      echo "$k8s_prompt"
   fi
 
 }
 
 function app_prompt() {
     APP_PROMPT=""
-    RESET="$(echo -e "\e[0m")"
+    # Literal \e[...m text (not a real ESC byte from `echo -e`): this stays
+    # unexpanded until PS1 is rendered, same as every other color code here,
+    # so _prompt_visible_len can strip it when sizing the clock's padding.
+    RESET='\[\e[0m\]'
 
     # Prompt for k8s
     if [ ! -z $KUBECONFIG ]; then
@@ -122,16 +125,30 @@ function build_prompt() {
     ucolor=$(_prompt_user_color "$USER")
     local user_seg="\[\e[1;${ucolor}m\]${USER}\[\e[0m\]"
 
-    local mid="$(app_prompt)\[\e[1;93m\]${AWS_PROFILE}\[\e[0;39m\] $(knife_block_prompt) $(okta_expiration_prompt) \[\e[1;37m\]|- \[\e[1;33m\]\w\[\e[0;39m\]\[\e[1;35m\]$(__git_ps1 " (%s)")\[\e[0;39m\] \[\e[1;37m\]-|\[\e[0;39m\]"
+    # Expand the cwd here (like bash's \w prompt-escape, sans PROMPT_DIRTRIM)
+    # instead of leaving \w for readline to expand later: build_prompt already
+    # reruns every prompt, and _prompt_visible_len has no way to know how long
+    # \w will render as, which was under-counting the line and pushing the
+    # clock past the terminal width.
+    local pwd_display="${PWD/#$HOME/\~}"
+    # PS1 is re-expanded at render time, so neutralize \ $ ` in the path.
+    pwd_display=${pwd_display//\\/\\\\}
+    pwd_display=${pwd_display//\$/\\\$}
+    pwd_display=${pwd_display//\`/\\\`}
+    local mid="$(app_prompt)\[\e[1;93m\]${AWS_PROFILE}\[\e[0;39m\] $(knife_block_prompt) $(okta_expiration_prompt) \[\e[1;37m\]|- \[\e[1;33m\]${pwd_display}\[\e[0;39m\]\[\e[1;35m\]$(__git_ps1 " (%s)")\[\e[0;39m\] \[\e[1;37m\]-|\[\e[0;39m\]"
 
-    local left="${err_seg}${user_seg} ${mid}"
+    local left=" ${err_seg}${user_seg} ${mid}"
 
-    local right="\[\e[0;34;40m\]$(date +%H:%M)\[\e[0m\]"
+    local right="\[\e[0;36;40m\]$(date +%H:%M)\[\e[0m\] "
 
     local left_len right_len cols pad
     left_len=$(_prompt_visible_len "$left")
     right_len=$(_prompt_visible_len "$right")
-    cols=${COLUMNS:-$(tput cols 2>/dev/null || echo 80)}
+    # tput cols queries the terminal directly, so it always reflects the
+    # current window size; $COLUMNS is only refreshed by bash on its own
+    # schedule (after a foreground job, on SIGWINCH) and can go stale after
+    # a resize, so it's used only as a fallback when there's no tty.
+    cols=$(tput cols 2>/dev/null) || cols="${COLUMNS:-80}"
     pad=$(( cols - left_len - right_len ))
     [ "$pad" -lt 1 ] && pad=1
 
