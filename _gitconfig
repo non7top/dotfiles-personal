@@ -40,7 +40,7 @@
   ; lists branches currently guarded by `bork`
   show-bork = "!f() { echo \"🔒 Currently borked branches:\"; git config --get-regexp \"branch\\..*\\.pushremote\" || echo \"  None! All branches are open to push.\"; }; f"
   ignored = status --ignored
-  redefault = !git fetch origin && git remote set-head origin --auto && git cd
+  redefault = "!f() { old=$(git symbolic-ref -q --short refs/remotes/origin/HEAD | sed s#origin/##); git fetch -qp && git remote set-head origin -a && new=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed s#origin/##) || return; [ -n \"$old\" ] || { old=$(git branch --show-current); [ \"$(git for-each-ref --format=\"%(upstream:track)\" refs/heads/$old)\" = \"[gone]\" ] || { echo \"cannot tell the old default branch; rename it manually\"; return 1; }; }; [ \"$old\" = \"$new\" ] || { git branch -m \"$old\" \"$new\" && git branch -u \"origin/$new\" \"$new\"; }; }; f"
 
 [pager]
   log = diff-highlight | less
