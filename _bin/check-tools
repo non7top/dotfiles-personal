@@ -41,6 +41,30 @@ else
     done <<< "$installed"
 fi
 
+# --- uv ---
+echo -e "\n${BLD}uv tools${RST} (~/.uv-tools)"
+if [ ! -f ~/.uv-tools ]; then
+    echo "  ~/.uv-tools not found"
+else
+    installed=$(uv tool list | awk '!/^-/ {print $1}')
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        pkg="${line%% *}"
+        if echo "$installed" | grep -qx "$pkg"; then
+            ok "$pkg"
+        else
+            missing "$pkg"; ((discrepancies++))
+        fi
+    done < ~/.uv-tools
+    while IFS= read -r pkg; do
+        [ -z "$pkg" ] && continue
+        in_ignore "$pkg" ~/.uv-ignore && continue
+        if ! grep -q "^${pkg}\( \|\$\)" ~/.uv-tools; then
+            extra "$pkg"; ((discrepancies++))
+        fi
+    done <<< "$installed"
+fi
+
 # --- npm ---
 echo -e "\n${BLD}npm global tools${RST} (~/.npm-global-tools)"
 if [ ! -f ~/.npm-global-tools ]; then
