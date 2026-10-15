@@ -18,29 +18,6 @@ in_ignore() {
     [ -f "$ignore_file" ] && grep -qx "$pkg" "$ignore_file"
 }
 
-# --- pipx ---
-echo -e "\n${BLD}pipx tools${RST} (~/.pipx-tools)"
-if [ ! -f ~/.pipx-tools ]; then
-    echo "  ~/.pipx-tools not found"
-else
-    installed=$(pipx list --short | awk '{print $1}')
-    while IFS= read -r pkg || [ -n "$pkg" ]; do
-        [ -z "$pkg" ] && continue
-        if echo "$installed" | grep -qx "$pkg"; then
-            ok "$pkg"
-        else
-            missing "$pkg"; ((discrepancies++))
-        fi
-    done < ~/.pipx-tools
-    while IFS= read -r pkg; do
-        [ -z "$pkg" ] && continue
-        in_ignore "$pkg" ~/.pipx-ignore && continue
-        if ! grep -qx "$pkg" ~/.pipx-tools; then
-            extra "$pkg"; ((discrepancies++))
-        fi
-    done <<< "$installed"
-fi
-
 # --- uv ---
 echo -e "\n${BLD}uv tools${RST} (~/.uv-tools)"
 if [ ! -f ~/.uv-tools ]; then

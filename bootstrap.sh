@@ -34,17 +34,15 @@ else
     warn "sudo needs a password or is unavailable; skipping apt-get steps"
 fi
 
-# Everything we need from apt: pipx for the tools below, unzip/zstd for
-# asdf plugins whose archives need them (awscli and tflint unzip theirs,
-# ollama ships a .tar.zst).
+# Everything we need from apt: unzip/zstd for asdf plugins whose archives
+# need them (awscli and tflint unzip theirs, ollama ships a .tar.zst).
 APT_PKGS=()
-command -v pipx  &>/dev/null || APT_PKGS+=(pipx)
 command -v unzip &>/dev/null || APT_PKGS+=(unzip)
 command -v zstd  &>/dev/null || APT_PKGS+=(zstd)
 # nodejs >= 26 dynamically links libatomic; without it every npm call fails
 ldconfig -p 2>/dev/null | grep -q libatomic.so.1 || APT_PKGS+=(libatomic1)
 if [ ${#APT_PKGS[@]} -eq 0 ]; then
-    success "apt packages already installed (pipx, unzip, zstd)"
+    success "apt packages already installed (unzip, zstd)"
 elif [ "$SUDO_OK" -eq 1 ]; then
     info "Installing ${APT_PKGS[*]}..."
     sudo apt-get update -qq
@@ -192,33 +190,6 @@ else
          "fix the github-cli asdf install above, then re-run bootstrap.sh"
 fi
 
-# Install pipx tools
-if command -v pipx &>/dev/null; then
-    info "Installing pipx tools..."
-    while IFS= read -r pkg || [ -n "$pkg" ]; do
-        [ -z "$pkg" ] && continue
-        if pipx list 2>/dev/null | grep -qw "$pkg"; then
-            success "${pkg} already installed"
-        elif pipx install "$pkg" --quiet; then
-            success "${pkg} installed"
-        else
-            skip "pipx tool FAILED: ${pkg}" \
-                 "error is directly above; retry with: pipx install ${pkg}"
-        fi
-    done < "$SCRIPT_DIR/_pipx-tools"
-
-    # Install `dotfiles` from our fork (upstream PyPI has an unfixed
-    # prefix-stripping bug -- see non7top/dotfiles-personal#24). Always
-    # force-reinstall so a previously PyPI-installed copy gets replaced;
-    # --force is fast/idempotent so this is safe on every run.
-    info "Installing dotfiles (patched fork)..."
-    pipx install --force "git+https://github.com/non7top/dotfiles.git" --quiet
-    success "dotfiles installed from non7top/dotfiles@main"
-else
-    skip "pipx not found, skipping pipx tools and dotfiles install" \
-         "run: sudo apt-get install -y pipx  then re-run bootstrap.sh"
-fi
-
 # Install uv tools (each line: package name, optionally followed by uv args)
 if command -v uv &>/dev/null; then
     info "Installing uv tools..."
@@ -269,7 +240,7 @@ fi
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if ! command -v dotfiles &>/dev/null; then
     skip "dotfiles command not available, skipping sync" \
-         "needs the pipx step above to succeed; re-run bootstrap.sh once pipx is installed"
+         "needs the uv tools step above to succeed; re-run bootstrap.sh once uv is installed"
 elif [ -z "${CI:-}" ]; then
     info "Backing up existing dotfiles..."
     for f in "$SCRIPT_DIR"/_*; do

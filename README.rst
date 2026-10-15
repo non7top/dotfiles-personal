@@ -21,9 +21,9 @@ Files are managed with `dotfiles <https://github.com/jbernard/dotfiles>`_ using 
 
 ``bootstrap.sh`` will:
 
-- install pipx and asdf (latest binary from GitHub releases)
-- add asdf plugins and install all tools from ``_tool-versions``
-- ``pipx install dotfiles pre-commit``
+- install asdf (latest binary from GitHub releases)
+- add asdf plugins and install all tools from ``_tool-versions`` (including ``uv``)
+- ``uv tool install`` everything in ``_uv-tools`` (``dotfiles``, ``pre-commit``, ...)
 - run ``dotfiles --sync``
 
 The global git hooks in ``_git/hooks/`` are wired via ``core.hooksPath = ~/.git/hooks/``

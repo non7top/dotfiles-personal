@@ -1,3 +1,14 @@
+ansible-core
+awslogs
+diff-highlight
+# Patched fork: upstream PyPI has an unfixed prefix-stripping bug (non7top/dotfiles-personal#24)
+dotfiles --from git+https://github.com/non7top/dotfiles.git
+isort
+jmespath-community-terminal
+pre-commit
+tox
+vpc-free
+yq
 # Pinned: unmerged upstream PR realiti4/claude-swap#322 (setup-token usage via a claude probe); no release has it
 claude-swap --from git+https://github.com/rjt-rockx/claude-swap.git@b8841c84e316f78fb5e6fc2dc35d3d6589796227
 specify-cli --from git+https://github.com/github/spec-kit.git
