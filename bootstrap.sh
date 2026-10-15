@@ -219,6 +219,26 @@ else
          "run: sudo apt-get install -y pipx  then re-run bootstrap.sh"
 fi
 
+# Install uv tools (each line: package name, optionally followed by uv args)
+if command -v uv &>/dev/null; then
+    info "Installing uv tools..."
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        pkg="${line%% *}"
+        if uv tool list 2>/dev/null | grep -q "^${pkg} "; then
+            success "uv tool ${pkg} already installed"
+        elif uv tool install $line; then
+            success "uv tool ${pkg} installed"
+        else
+            skip "uv tool FAILED: ${pkg}" \
+                 "error is directly above; retry with: uv tool install ${line}"
+        fi
+    done < "$SCRIPT_DIR/_uv-tools"
+else
+    skip "uv not found, skipping uv tools" \
+         "fix the uv asdf install above, then re-run bootstrap.sh"
+fi
+
 # Install npm global tools
 if command -v npm &>/dev/null; then
     info "Installing npm global tools..."
