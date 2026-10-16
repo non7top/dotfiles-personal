@@ -93,15 +93,16 @@ else
     bad "gh not on PATH — gh extensions silently skipped"
 fi
 
-echo "== pipx tools"
-while IFS= read -r pkg || [ -n "$pkg" ]; do
-    [ -z "$pkg" ] && continue
-    if command -v pipx >/dev/null 2>&1 && pipx list 2>/dev/null | grep -qw "$pkg"; then
-        ok "pipx: $pkg"
+echo "== uv tools"
+while IFS= read -r line || [ -n "$line" ]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    pkg="${line%% *}"
+    if command -v uv >/dev/null 2>&1 && uv tool list 2>/dev/null | grep -q "^${pkg} "; then
+        ok "uv: $pkg"
     else
-        bad "pipx tool missing: $pkg"
+        bad "uv tool missing: $pkg"
     fi
-done < "$REPO/_pipx-tools"
+done < "$REPO/_uv-tools"
 
 echo "== npm global tools"
 if command -v npm >/dev/null 2>&1; then
