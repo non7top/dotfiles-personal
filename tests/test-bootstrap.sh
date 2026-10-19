@@ -125,6 +125,13 @@ else
     bad "vim-plug missing"
 fi
 
+echo "== session-manager-plugin"
+if command -v session-manager-plugin >/dev/null 2>&1; then
+    ok "session-manager-plugin on PATH"
+else
+    bad "session-manager-plugin missing"
+fi
+
 echo "== dotfiles sync results (the 'claude and other stuff')"
 for link in .bashrc .vimrc .claude/skills .claude/statusline-command.sh .gemini/statusline-command.sh; do
     if [ -L "$HOME/$link" ]; then

@@ -237,6 +237,28 @@ else
     success "vim-plug installed"
 fi
 
+# session-manager-plugin: `aws ssm start-session` shells out to it, and
+# there is no asdf plugin. Extracting the .deb needs no sudo, unlike dpkg -i.
+# Tracks "latest" like asdf/vim-plug above; amd64 only like the asdf step.
+if command -v session-manager-plugin &>/dev/null; then
+    success "session-manager-plugin already installed"
+else
+    info "Installing session-manager-plugin..."
+    SMP_TMP=$(mktemp -d)
+    mkdir -p "$HOME/.local/bin"
+    if curl -fsSL -o "$SMP_TMP/smp.deb" \
+            https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb \
+        && dpkg-deb -x "$SMP_TMP/smp.deb" "$SMP_TMP/x" \
+        && install -m 0755 "$SMP_TMP/x/usr/local/sessionmanagerplugin/bin/session-manager-plugin" \
+            "$HOME/.local/bin/session-manager-plugin"; then
+        success "session-manager-plugin installed"
+    else
+        skip "session-manager-plugin install failed (aws ssm start-session needs it)" \
+             "download session-manager-plugin.deb (ubuntu_64bit) from s3.amazonaws.com/session-manager-downloads/plugin/latest, dpkg-deb -x it, install the binary into ~/.local/bin"
+    fi
+    rm -rf "$SMP_TMP"
+fi
+
 # Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
 if ! command -v dotfiles &>/dev/null; then
     skip "dotfiles command not available, skipping sync" \
