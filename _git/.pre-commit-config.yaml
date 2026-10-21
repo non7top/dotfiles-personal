@@ -10,6 +10,14 @@ repos:
   - id: trailing-whitespace
     args: [--markdown-linebreak-ext=md]
   - id: check-json
+- repo: https://github.com/sirosen/texthooks
+  rev: 1.0.0
+  hooks:
+  - id: fix-smartquotes
+  - id: fix-spaces
+  - id: fix-unicode-dashes
+  - id: fix-ligatures
+  - id: forbid-bidi-controls
 - repo: https://github.com/gruntwork-io/pre-commit
   rev: v0.1.20
   hooks:
