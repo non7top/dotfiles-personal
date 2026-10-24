@@ -30,14 +30,14 @@ else
         if echo "$installed" | grep -qx "$pkg"; then
             ok "$pkg"
         else
-            missing "$pkg"; ((discrepancies++))
+            missing "$pkg"; discrepancies=$((discrepancies + 1))
         fi
     done < ~/.uv-tools
     while IFS= read -r pkg; do
         [ -z "$pkg" ] && continue
         in_ignore "$pkg" ~/.uv-ignore && continue
         if ! grep -q "^${pkg}\( \|\$\)" ~/.uv-tools; then
-            extra "$pkg"; ((discrepancies++))
+            extra "$pkg"; discrepancies=$((discrepancies + 1))
         fi
     done <<< "$installed"
 fi
@@ -54,14 +54,14 @@ else
         if echo "$installed" | grep -qx "$pkg"; then
             ok "$pkg"
         else
-            missing "$pkg"; ((discrepancies++))
+            missing "$pkg"; discrepancies=$((discrepancies + 1))
         fi
     done < ~/.npm-global-tools
     while IFS= read -r pkg; do
         [ -z "$pkg" ] && continue
         in_ignore "$pkg" ~/.npm-ignore && continue
         if ! grep -qx "$pkg" ~/.npm-global-tools; then
-            extra "$pkg"; ((discrepancies++))
+            extra "$pkg"; discrepancies=$((discrepancies + 1))
         fi
     done <<< "$installed"
 fi
@@ -75,13 +75,67 @@ else
         [ -z "$tool" ] && continue
         installed_ver=$(asdf list "$tool" 2>&1 | tr -d ' *' | tail -1 || true)
         if [ -z "$installed_ver" ]; then
-            missing "$tool $version"; ((discrepancies++))
+            missing "$tool $version"; discrepancies=$((discrepancies + 1))
         elif [ "$installed_ver" != "$version" ]; then
-            echo -e "  ${YLW}≠ mismatch${RST}  $tool (manifest: $version, installed: $installed_ver)"; ((discrepancies++))
+            echo -e "  ${YLW}≠ mismatch${RST}  $tool (manifest: $version, installed: $installed_ver)"; discrepancies=$((discrepancies + 1))
         else
             ok "$tool $version"
         fi
     done < ~/.tool-versions
+fi
+
+# --- krew ---
+echo -e "\n${BLD}krew plugins${RST} (~/.krew-plugins)"
+if [ ! -f ~/.krew-plugins ]; then
+    echo "  ~/.krew-plugins not found"
+else
+    installed=$(krew list 2>/dev/null || true)
+    while IFS= read -r plugin || [ -n "$plugin" ]; do
+        [ -z "$plugin" ] && continue
+        if echo "$installed" | grep -qw "$plugin"; then
+            ok "$plugin"
+        else
+            missing "$plugin"; discrepancies=$((discrepancies + 1))
+        fi
+    done < ~/.krew-plugins
+fi
+
+# --- gh extensions ---
+echo -e "\n${BLD}gh extensions${RST} (~/.gh-extensions)"
+if [ ! -f ~/.gh-extensions ]; then
+    echo "  ~/.gh-extensions not found"
+else
+    # dir check, not `gh extension list`: the CLI refuses to list
+    # extensions before `gh auth login`
+    while IFS= read -r ext || [ -n "$ext" ]; do
+        [ -z "$ext" ] && continue
+        if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/${ext##*/}" ]; then
+            ok "$ext"
+        else
+            missing "$ext"; discrepancies=$((discrepancies + 1))
+        fi
+    done < ~/.gh-extensions
+fi
+
+# --- installed outside the manifests ---
+echo -e "\n${BLD}bootstrap.sh extras${RST}"
+for p in diff git; do
+    # helm-diff registers as "diff", helm-git as "helm-git"
+    if helm plugin list 2>/dev/null | grep -qE "^(helm-)?${p}[[:space:]]"; then
+        ok "helm plugin $p"
+    else
+        missing "helm plugin $p"; discrepancies=$((discrepancies + 1))
+    fi
+done
+if [ -f ~/.vim/autoload/plug.vim ]; then
+    ok "vim-plug"
+else
+    missing "vim-plug"; discrepancies=$((discrepancies + 1))
+fi
+if command -v session-manager-plugin >/dev/null 2>&1; then
+    ok "session-manager-plugin"
+else
+    missing "session-manager-plugin"; discrepancies=$((discrepancies + 1))
 fi
 
 echo ""

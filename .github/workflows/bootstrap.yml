@@ -20,6 +20,8 @@ jobs:
         run: |
           ln -sf "$GITHUB_WORKSPACE/_uv-tools" ~/.uv-tools
           ln -sf "$GITHUB_WORKSPACE/_npm-global-tools" ~/.npm-global-tools
+          ln -sf "$GITHUB_WORKSPACE/_krew-plugins" ~/.krew-plugins
+          ln -sf "$GITHUB_WORKSPACE/_gh-extensions" ~/.gh-extensions
           ln -sf "$GITHUB_WORKSPACE/_tool-versions" ~/.tool-versions
           ln -sf "$GITHUB_WORKSPACE/_uv-ignore" ~/.uv-ignore
           ln -sf "$GITHUB_WORKSPACE/_npm-ignore" ~/.npm-ignore
