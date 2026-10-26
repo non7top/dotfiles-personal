@@ -1,5 +1,10 @@
 #!/bin/bash
 # Block commits to branches whose remote has been deleted or whose PR is closed/merged.
+#
+# Contract: work must never land on a branch whose PR is closed/merged. This hook is the early
+# warning at commit time; pre-push.d/block-closed-pr-push is the enforcement. Any case this hook
+# allows (e.g. a new branch cut from a merged one) must be caught there if it is pushed onto the
+# merged branch. Do not relax one hook without checking the other still covers the path.
 
 set -euo pipefail
 

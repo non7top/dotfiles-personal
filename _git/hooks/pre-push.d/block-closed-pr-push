@@ -1,5 +1,10 @@
 #!/bin/bash
 # Block pushes to remote branches whose PR is closed/merged, including `git push origin local:merged`.
+#
+# Contract: work must never land on a branch whose PR is closed/merged. This is the enforcement
+# point and checks the remote ref being pushed, whatever the local branch is called. The commit
+# hook (pre-commit.d/block-closed-pr-branch) deliberately allows some cases (e.g. a new branch cut
+# from a merged one) because it relies on this hook. Do not relax this one without re-checking it.
 
 set -euo pipefail
 
