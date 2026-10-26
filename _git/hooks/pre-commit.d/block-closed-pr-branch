@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+# shellcheck source=../lib/closed-pr-check.sh
+source "$(dirname "$(readlink -f "$0")")/../lib/closed-pr-check.sh"
+
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || true)
 
 # Skip detached HEAD and main development branches
@@ -32,23 +35,4 @@ if [[ "$UPSTREAM_REMOTE" != "." && "$UPSTREAM_MERGE" == "refs/heads/$CURRENT_BRA
     fi
 fi
 
-# gh check is advisory -- missing or unauthenticated gh is a warning, not a hard failure
-if ! command -v gh &>/dev/null; then
-    echo "Warning: 'gh' not found; skipping closed-PR check." >&2
-    exit 0
-fi
-
-if ! gh auth status &>/dev/null; then
-    echo "Warning: 'gh' is not authenticated; skipping closed-PR check." >&2
-    exit 0
-fi
-
-PR_STATE=$(gh pr list --head "$CURRENT_BRANCH" --state closed --json state --jq '.[0].state' 2>/dev/null || true)
-
-if [[ "$PR_STATE" == "CLOSED" || "$PR_STATE" == "MERGED" ]]; then
-    echo "Commit blocked: branch '$CURRENT_BRANCH' has a ${PR_STATE} pull request." >&2
-    echo "Create a new branch for your changes." >&2
-    exit 1
-fi
-
-exit 0
+closed_pr_check "$CURRENT_BRANCH" "Commit"
