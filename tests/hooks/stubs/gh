@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Fake gh for hook tests. State comes from the per-test dir $GH_STUB_DIR (see helpers.bash):
+#   prs.json      array of {number, headRefName, state}; state is OPEN, CLOSED or MERGED
+#   auth_rc       exit code for `gh auth status` (default 0)
+#   pr_list_rc    exit code for `gh pr list`, e.g. 1 to simulate an API/network failure (default 0)
+# Every call is appended to $STUB_LOG_DIR/gh.log. Anything not implemented exits 99 on purpose, so a
+# hook starting to call gh differently fails the suite instead of silently passing.
+set -euo pipefail
+
+echo "$*" >> "$STUB_LOG_DIR/gh.log"
+
+if [[ "${1:-} ${2:-}" == "auth status" ]]; then
+    exit "$(cat "$GH_STUB_DIR/auth_rc" 2>/dev/null || echo 0)"
+fi
+
+if [[ "${1:-} ${2:-}" != "pr list" ]]; then
+    echo "gh stub: unsupported call: $*" >&2
+    exit 99
+fi
+shift 2
+
+head="" state=open fields="" jq_expr=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --head)  head=$2; shift 2 ;;
+        --state) state=$2; shift 2 ;;
+        --json)  fields=$2; shift 2 ;;
+        --jq)    jq_expr=$2; shift 2 ;;
+        *) echo "gh stub: unsupported pr list flag: $1" >&2; exit 99 ;;
+    esac
+done
+
+rc=$(cat "$GH_STUB_DIR/pr_list_rc" 2>/dev/null || echo 0)
+if [[ "$rc" -ne 0 ]]; then
+    echo "gh stub: pr list failed (simulated)" >&2
+    exit "$rc"
+fi
+
+# Same semantics as the real gh, checked against a merged PR: --state closed includes MERGED PRs.
+result=$(jq -c --arg head "$head" --arg state "$state" --arg fields "$fields" '
+    map(select(($head == "" or .headRefName == $head)
+        and ($state == "all"
+            or ($state == "open" and .state == "OPEN")
+            or ($state == "closed" and (.state == "CLOSED" or .state == "MERGED"))
+            or ($state == "merged" and .state == "MERGED"))))
+    | map(if $fields == "" then . else with_entries(select(.key as $k | ($fields | split(",") | index($k)))) end)
+' "$GH_STUB_DIR/prs.json")
+
+if [[ -n "$jq_expr" ]]; then
+    jq -r "$jq_expr" <<<"$result"
+else
+    echo "$result"
+fi

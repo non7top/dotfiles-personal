@@ -1,7 +1,8 @@
 FROM python:3.13-slim
 
-RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends git \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends git jq bats bats-assert bats-support bats-file \
     && rm -rf /var/lib/apt/lists/*
 
 # Same patched fork that bootstrap.sh installs on the host
