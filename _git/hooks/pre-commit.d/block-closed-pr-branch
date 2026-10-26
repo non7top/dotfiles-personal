@@ -10,22 +10,31 @@ if [[ -z "$CURRENT_BRANCH" || "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" =
     exit 0
 fi
 
-# If no upstream is configured the branch hasn't been pushed yet — safe to commit
-if ! git rev-parse --abbrev-ref "${CURRENT_BRANCH}@{upstream}" &>/dev/null; then
+UPSTREAM_REMOTE=$(git config "branch.${CURRENT_BRANCH}.remote" || true)
+UPSTREAM_MERGE=$(git config "branch.${CURRENT_BRANCH}.merge" || true)
+
+# If no upstream is configured the branch hasn't been pushed yet -- safe to commit
+if [[ -z "$UPSTREAM_REMOTE" || -z "$UPSTREAM_MERGE" ]]; then
     exit 0
 fi
 
 # Refresh remote tracking refs quietly
 git fetch origin --prune &>/dev/null || true
 
-# Block if the remote branch was deleted
-if [[ -z "$(git ls-remote --heads origin "$CURRENT_BRANCH" 2>/dev/null)" ]]; then
-    echo "Commit blocked: remote branch 'origin/$CURRENT_BRANCH' no longer exists." >&2
-    echo "Switch to a new branch before committing." >&2
-    exit 1
+if [[ "$UPSTREAM_REMOTE" != "." && "$UPSTREAM_MERGE" == "refs/heads/$CURRENT_BRANCH" ]]; then
+    # Upstream is the branch's own remote counterpart: [gone] means it is missing after the prune
+    if [[ "$(git for-each-ref --format='%(upstream:track)' "refs/heads/$CURRENT_BRANCH")" == "[gone]" ]]; then
+        echo "Commit blocked: upstream '$UPSTREAM_REMOTE/$CURRENT_BRANCH' does not exist on the remote." >&2
+        echo "If the branch was never pushed, create it first: git push -u $UPSTREAM_REMOTE $CURRENT_BRANCH" >&2
+        echo "If it was deleted (PR merged or closed), switch to a new branch before committing." >&2
+        exit 1
+    fi
+elif ! git show-ref --verify --quiet "refs/remotes/origin/$CURRENT_BRANCH"; then
+    # Upstream is another branch (e.g. cut from origin/master) and nothing was pushed under this name
+    exit 0
 fi
 
-# gh check is advisory — missing or unauthenticated gh is a warning, not a hard failure
+# gh check is advisory -- missing or unauthenticated gh is a warning, not a hard failure
 if ! command -v gh &>/dev/null; then
     echo "Warning: 'gh' not found; skipping closed-PR check." >&2
     exit 0
