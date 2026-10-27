@@ -9,11 +9,11 @@ fi
 # export SYSTEMD_PAGER=
 
 # User specific aliases and functions
-test -f $HOME/spm/local.env && source $HOME/spm/local.env
+test -f "$HOME/spm/local.env" && source "$HOME/spm/local.env"
 test -f /usr/bin/chef && eval "$(chef shell-init bash)"
 
-if [ -d $HOME/.local_env ]; then
-    for i in $HOME/.local_env/*.env ; do
+if [ -d "$HOME/.local_env" ]; then
+    for i in "$HOME"/.local_env/*.env ; do
         if [ -r "$i" ]; then
             if [ "${-#*i}" != "$-" ]; then
                 . "$i"
@@ -44,7 +44,7 @@ fi
 
 
 function app_prompt_k8s() {
-  if [ ! -z $KUBECONFIG ]; then
+  if [ -n "$KUBECONFIG" ]; then
       # context namespace
       k8s_cluster_name=$(kubectl config view --minify --output 'jsonpath={.contexts[0].name}'|sed -e 's/eks_k8s-//' -e 's/-eks-cluster//')
       k8s_prompt="\[\e[34m\]$k8s_cluster_name${RESET}"
@@ -65,7 +65,7 @@ function app_prompt() {
     RESET='\[\e[0m\]'
 
     # Prompt for k8s
-    if [ ! -z $KUBECONFIG ]; then
+    if [ -n "$KUBECONFIG" ]; then
         APP_PROMPT="${APP_PROMPT}$(app_prompt_k8s) "
     fi
 
@@ -175,7 +175,7 @@ if [[ -d "$HOME/perl5" ]]; then
   export PERL_MM_OPT="INSTALL_BASE=$HOME/perl5";
   export PERL5LIB="$HOME/perl5/lib/perl5:$PERL5LIB";
   export PATH="$HOME/perl5/bin:$PATH";
-  eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+  eval "$(perl -I"$HOME/perl5/lib/perl5" -Mlocal::lib)"
 fi
 
 export PATH="$HOME/.java/bin:$PATH"
