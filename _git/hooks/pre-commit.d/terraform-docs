@@ -21,14 +21,20 @@ fi
 exec 1>&2
 
 
-for DIR in `exec git diff --cached --name-status $against | awk '$1 != "R" { print $2 }' | xargs -rn1 dirname | xargs -rn1 realpath`; do
-	if [ -f "$DIR/.terraform-docs.yml" ]; then
-	    cd "$DIR"
-	    docker run --rm --volume "$(pwd):/terraform-docs" -u $(id -u) quay.io/terraform-docs/terraform-docs:0.18.0 markdown /terraform-docs
-	fi
-done
+ROOT=$(git rev-parse --show-toplevel)
 
-if git status --porcelain | grep -E '^[ ]' | grep -q README.md; then
+readme_diff() { git -C "$ROOT" diff -- ':(top,glob)**/README.md'; }
+readmes_before=$(readme_diff)
+
+while IFS= read -r -d '' dir; do
+    DIR=$(realpath "$ROOT/$dir")
+    if [ -f "$DIR/.terraform-docs.yml" ]; then
+        docker run --rm --volume "$DIR:/terraform-docs" -u "$(id -u)" quay.io/terraform-docs/terraform-docs:0.18.0 markdown /terraform-docs
+    fi
+done < <(git diff --cached --name-only -z $against | xargs -0rn1 dirname -z | sort -zu)
+
+# only READMEs the regeneration changed count, not edits that were already unstaged
+if [ "$readmes_before" != "$(readme_diff)" ]; then
     echo "ERROR: some README.md files have changed"
     exit 1
 fi

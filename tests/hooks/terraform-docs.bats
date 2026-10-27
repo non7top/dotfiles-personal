@@ -48,13 +48,44 @@ run_hook() { run "$HOOKS/pre-commit.d/terraform-docs"; }
     assert_output --partial "some README.md files have changed"
 }
 
-@test "KNOWN BEHAVIOUR: any unstaged README.md change anywhere blocks the commit" {
+@test "an unrelated unstaged README.md edit does not block the commit" {
     echo 'x = 1' > modules/plain/main.tf
     git add modules/plain/main.tf
     echo "edited" >> modules/plain/README.md
     run_hook
+    assert_success
+}
+
+@test "an already-edited README that terraform-docs changes further is blocked" {
+    echo 'x = 1' > modules/vpc/main.tf
+    git add modules/vpc/main.tf
+    echo "edited" >> modules/vpc/README.md
+    DOCKER_STUB_APPEND=$T/repo/modules/vpc/README.md run_hook
     assert_failure 1
     assert_output --partial "some README.md files have changed"
+}
+
+@test "a module dir with spaces in its name is handled" {
+    mkdir "modules/my vpc"
+    touch "modules/my vpc/.terraform-docs.yml"
+    echo 'x = 1' > "modules/my vpc/main.tf"
+    git add "modules/my vpc/main.tf"
+    run_hook
+    assert_success
+    run stub_calls docker
+    assert_output --partial "$T/repo/modules/my vpc:/terraform-docs"
+}
+
+@test "every staged module dir is processed" {
+    echo 'x = 1' > modules/vpc/main.tf
+    mkdir modules/other && touch modules/other/.terraform-docs.yml
+    echo 'x = 1' > modules/other/main.tf
+    git add modules/vpc/main.tf modules/other/main.tf
+    run_hook
+    assert_success
+    run stub_calls docker
+    assert_output --partial "$T/repo/modules/other:/terraform-docs"
+    assert_output --partial "$T/repo/modules/vpc:/terraform-docs"
 }
 
 @test "docker failing fails the commit" {
