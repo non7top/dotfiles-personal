@@ -18,7 +18,7 @@ vault_approle_secret_id=$(vault write -f ${ns}/auth/approle/role/${role}/secret-
 _tab "vault_approle_secret_id" $vault_approle_secret_id
 
 vault_aws_role=$( vault read ${ns}/auth/approle/role/${role} -format=json|jq -r '.data.token_policies[]|select(endswith("-sts"))')
-_tab "vault_aws_role" "$role"
+_tab "vault_aws_role" "$vault_aws_role"
 
 iam_roles=$( vault read ${ns}/aws/roles/${role} -format=json|jq -r .data.role_arns[])
 _tab "iam_roles" " "
