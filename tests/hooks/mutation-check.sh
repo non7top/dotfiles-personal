@@ -63,7 +63,8 @@ mutate "pre-commit dispatcher: empty .d runs the glob" pre-commit 's|^shopt -s n
 mutate "protect-default: never blocks"               pre-commit.d/protect-default 's|    exit 1|    exit 0|'           protect-default.bats
 mutate "protect-default: protects nothing"           pre-commit.d/protect-default 's|^set -e$|exit 0|'                 protect-default.bats
 mutate "terraform-docs: README changes ignored"      pre-commit.d/terraform-docs 's|    exit 1|    exit 0|'              terraform-docs.bats
-mutate "run-local-hook: local hook never runs"       pre-commit.d/run-local-hook 's|-e "\$PROJECT_ROOT|-e "/nonexistent/$PROJECT_ROOT|' run-local-hook.bats
+mutate "run-local-hook: local hook never runs"       pre-commit.d/run-local-hook 's|-e "\$LOCAL_HOOK"|-e "/nonexistent/$LOCAL_HOOK"|' run-local-hook.bats
+mutate "run-local-hook: uses .git, breaks linked worktrees" pre-commit.d/run-local-hook 's|--git-common-dir|--git-dir|' run-local-hook.bats
 
 echo
 echo "$killed killed, $survivors survived"

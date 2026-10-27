@@ -52,10 +52,11 @@ run_hook() { run "$HOOKS/pre-commit.d/run-local-hook" "$@"; }
     assert_failure 1
 }
 
-@test "KNOWN GAP: in a linked worktree .git is a file, so the local hook is skipped" {
+@test "in a linked worktree the main repo's local hook is executed" {
     local_hook pre-commit 1
     git worktree add -q -b wt "$T/wt" origin/master
     cd "$T/wt"
     run_hook
-    assert_success
+    assert_failure 1
+    assert_output --partial "Executing local hook pre-commit"
 }

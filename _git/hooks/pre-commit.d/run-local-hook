@@ -1,10 +1,12 @@
+#!/usr/bin/env bash
 # Run local hook if exists
 HOOK=${1:-pre-commit}
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+# The common dir, not .git: in a linked worktree .git is a file and the hooks live in the main repo
+LOCAL_HOOK="$(git rev-parse --path-format=absolute --git-common-dir)/hooks/$HOOK"
 
-if [ -e "$PROJECT_ROOT/.git/hooks/$HOOK" ]; then
+if [ -e "$LOCAL_HOOK" ]; then
   echo "Executing local hook $HOOK"
-  $PROJECT_ROOT/.git/hooks/$HOOK "$@"
+  "$LOCAL_HOOK" "$@"
 else
   exit 0
 fi
