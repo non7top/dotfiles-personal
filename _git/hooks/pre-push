@@ -10,6 +10,7 @@ refs=$(mktemp)
 trap 'rm -f "$refs"' EXIT
 cat > "$refs"
 
+shopt -s nullglob
 ret=0
 git lfs pre-push "$@" < "$refs" || ret=1
 
