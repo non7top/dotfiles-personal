@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fake docker: logs argv, optionally appends a line to $DOCKER_STUB_APPEND (simulates terraform-docs
+# rewriting a README), exits with $DOCKER_STUB_RC (default 0).
+echo "$*" >> "$STUB_LOG_DIR/docker.log"
+[[ -n "${DOCKER_STUB_APPEND:-}" ]] && echo regenerated >> "$DOCKER_STUB_APPEND"
+exit "${DOCKER_STUB_RC:-0}"

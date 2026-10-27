@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Fake git-lfs: logs argv; for pre-push also records stdin (the ref list). Exits with $GIT_LFS_STUB_RC.
+echo "$*" >> "$STUB_LOG_DIR/git-lfs.log"
+[[ "${1:-}" == "pre-push" ]] && cat > "$STUB_LOG_DIR/git-lfs.stdin"
+exit "${GIT_LFS_STUB_RC:-0}"

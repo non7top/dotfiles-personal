@@ -1,7 +1,15 @@
 #!/bin/bash
 # Block commits to branches whose remote has been deleted or whose PR is closed/merged.
+#
+# Contract: work must never land on a branch whose PR is closed/merged. This hook is the early
+# warning at commit time; pre-push.d/block-closed-pr-push is the enforcement. Any case this hook
+# allows (e.g. a new branch cut from a merged one) must be caught there if it is pushed onto the
+# merged branch. Do not relax one hook without checking the other still covers the path.
 
 set -euo pipefail
+
+# shellcheck source=../lib/closed-pr-check.sh
+source "$(dirname "$(readlink -f "$0")")/../lib/closed-pr-check.sh"
 
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || true)
 
@@ -10,38 +18,26 @@ if [[ -z "$CURRENT_BRANCH" || "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" =
     exit 0
 fi
 
-# If no upstream is configured the branch hasn't been pushed yet — safe to commit
-if ! git rev-parse --abbrev-ref "${CURRENT_BRANCH}@{upstream}" &>/dev/null; then
+UPSTREAM_REMOTE=$(git config "branch.${CURRENT_BRANCH}.remote" || true)
+UPSTREAM_MERGE=$(git config "branch.${CURRENT_BRANCH}.merge" || true)
+
+# If no upstream is configured the branch hasn't been pushed yet -- safe to commit
+if [[ -z "$UPSTREAM_REMOTE" || -z "$UPSTREAM_MERGE" ]]; then
     exit 0
 fi
 
 # Refresh remote tracking refs quietly
 git fetch origin --prune &>/dev/null || true
 
-# Block if the remote branch was deleted
-if [[ -z "$(git ls-remote --heads origin "$CURRENT_BRANCH" 2>/dev/null)" ]]; then
-    echo "Commit blocked: remote branch 'origin/$CURRENT_BRANCH' no longer exists." >&2
-    echo "Switch to a new branch before committing." >&2
-    exit 1
+# Only an upstream that is the branch's own remote counterpart can be "deleted"; a branch cut from
+# origin/master has upstream origin/master and was never pushed under its own name
+if [[ "$UPSTREAM_REMOTE" != "." && "$UPSTREAM_MERGE" == "refs/heads/$CURRENT_BRANCH" ]]; then
+    if [[ "$(git for-each-ref --format='%(upstream:track)' "refs/heads/$CURRENT_BRANCH")" == "[gone]" ]]; then
+        echo "Commit blocked: upstream '$UPSTREAM_REMOTE/$CURRENT_BRANCH' does not exist on the remote." >&2
+        echo "If the branch was never pushed, create it first: git push -u $UPSTREAM_REMOTE $CURRENT_BRANCH" >&2
+        echo "If it was deleted (PR merged or closed), switch to a new branch before committing." >&2
+        exit 1
+    fi
 fi
 
-# gh check is advisory — missing or unauthenticated gh is a warning, not a hard failure
-if ! command -v gh &>/dev/null; then
-    echo "Warning: 'gh' not found; skipping closed-PR check." >&2
-    exit 0
-fi
-
-if ! gh auth status &>/dev/null; then
-    echo "Warning: 'gh' is not authenticated; skipping closed-PR check." >&2
-    exit 0
-fi
-
-PR_STATE=$(gh pr list --head "$CURRENT_BRANCH" --state closed --json state --jq '.[0].state' 2>/dev/null || true)
-
-if [[ "$PR_STATE" == "CLOSED" || "$PR_STATE" == "MERGED" ]]; then
-    echo "Commit blocked: branch '$CURRENT_BRANCH' has a ${PR_STATE} pull request." >&2
-    echo "Create a new branch for your changes." >&2
-    exit 1
-fi
-
-exit 0
+closed_pr_check "$CURRENT_BRANCH" "Commit"

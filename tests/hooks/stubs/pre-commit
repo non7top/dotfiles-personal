@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Fake pre-commit: logs argv, exits with $PRE_COMMIT_STUB_RC (default 0).
+echo "$*" >> "$STUB_LOG_DIR/pre-commit.log"
+exit "${PRE_COMMIT_STUB_RC:-0}"
