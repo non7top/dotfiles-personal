@@ -174,6 +174,18 @@ else
          "fix the krew asdf install above, then re-run bootstrap.sh"
 fi
 
+# gh_ext_source <extension dir>: print OWNER/REPO the extension was installed from, empty if unknown
+gh_ext_source() {
+    local dir=$1 url
+    if [ -d "$dir/.git" ]; then
+        url=$(git -C "$dir" remote get-url origin 2>/dev/null) || return 0
+        url=${url%.git}
+        echo "${url#*github.com[:/]}"
+    elif [ -f "$dir/manifest.yml" ]; then
+        awk '$1 == "owner:" { o = $2 } $1 == "name:" { n = $2 } END { if (o && n) print o "/" n }' "$dir/manifest.yml"
+    fi
+}
+
 # Install gh extensions
 if command -v gh &>/dev/null; then
     info "Installing gh extensions..."
@@ -182,10 +194,16 @@ if command -v gh &>/dev/null; then
         ext_name="${ext##*/}"
         # check the extensions dir, not `gh extension list` -- the latter
         # refuses to run before `gh auth login` (e.g. on a fresh machine)
-        if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/${ext_name}" ]; then
+        ext_dir="${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/${ext_name}"
+        installed_from=""
+        [ -d "$ext_dir" ] && installed_from=$(gh_ext_source "$ext_dir")
+        if [ -d "$ext_dir" ] && { [ -z "$installed_from" ] || [ "${installed_from,,}" = "${ext,,}" ]; }; then
             success "gh extension ${ext_name} already installed"
+        elif [ -d "$ext_dir" ] && ! gh extension remove "${ext_name#gh-}"; then
+            skip "gh extension ${ext_name} comes from ${installed_from}, not ${ext}, and could not be removed" \
+                 "run: gh extension remove ${ext_name#gh-} && gh extension install ${ext}"
         elif gh extension install "$ext"; then
-            success "gh extension ${ext_name} installed"
+            success "gh extension ${ext_name} installed from ${ext}"
         else
             skip "gh extension FAILED: ${ext}" \
                  "error is directly above; retry with: gh extension install ${ext}"
