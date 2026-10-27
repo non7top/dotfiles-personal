@@ -259,7 +259,7 @@ else
     rm -rf "$SMP_TMP"
 fi
 
-# Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
+# Sync dotfiles (skip in CI -- runner already has ~/.bashrc etc.)
 if ! command -v dotfiles &>/dev/null; then
     skip "dotfiles command not available, skipping sync" \
          "needs the uv tools step above to succeed; re-run bootstrap.sh once uv is installed"
@@ -289,7 +289,7 @@ fi
 
 echo ""
 if [ ${#INCOMPLETE[@]} -gt 0 ]; then
-    echo -e "${RED}  ✗ Bootstrap INCOMPLETE — ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
+    echo -e "${RED}  ✗ Bootstrap INCOMPLETE -- ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
     for item in "${INCOMPLETE[@]}"; do
         echo -e "${RED}    - ${item}${RESET}" >&2
     done
