@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-#set -x
-exit 0
-origin="$(git config --get remote.origin.url)" || { echo "Incorrect user is set for this origin, please doublecheck"; exit 1; }
-orgin_domain=$( echo "$origin" | sed 's|.*//||; s|.*@||; s|/.*||; s|:.*||' | sed -e 's#\.#-#g' )
+# Commit email must match the per-domain default in [user "default"] (see ~/.gitconfig.local).
+# Domains with no default configured, and repos without an origin, are not checked.
+origin="$(git config --get remote.origin.url)" || exit 0
+origin_domain=$( echo "$origin" | sed 's|.*//||; s|.*@||; s|/.*||; s|:.*||' | sed -e 's#\.#-#g' )
 
-default_for_domain="$( git config --get user.default.${orgin_domain} )"
+default_for_domain="$( git config --get "user.default.${origin_domain}" )" || exit 0
 current_email="$( git config --get user.email )"
 
-if [ "x$current_email" != "x$default_for_domain" ]; then
+if [ "$current_email" != "$default_for_domain" ]; then
     echo "Incorrect user is set for this origin, please doublecheck"
-    echo "git config --add user.email $default_for_domain"
+    echo "git config user.email $default_for_domain"
     exit 1
 fi
