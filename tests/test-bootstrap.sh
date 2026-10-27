@@ -5,7 +5,10 @@
 # disposable bootstrap container (make test-bootstrap).
 set -uo pipefail
 
-REPO=${REPO:-/repo}
+# /repo is mounted read-only, but a real clone is writable and bootstrap writes
+# plug.vim through ~/.vim into it, so test against a writable copy.
+cp -a "${REPO:-/repo}" "$HOME/Dotfiles"
+REPO=$HOME/Dotfiles
 pass=0 fail=0
 ok()  { echo "  ok: $1"; pass=$((pass + 1)); }
 bad() { echo "  FAIL: $1"; fail=$((fail + 1)); }
