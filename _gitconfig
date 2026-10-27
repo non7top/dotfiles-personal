@@ -30,7 +30,6 @@
   diffc = diff --cached
   pu = pull upstream HEAD --tags
   root = rev-parse --show-toplevel
-  cdr = !cd $( git root )
   pushf = push --force-with-lease origin HEAD
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
   pr = "!f() { git fetch -fu ${2:-$(git remote |grep -x upstream || echo origin)} refs/pull/$1/head:pr/$1 && git checkout pr/$1; }; f"
