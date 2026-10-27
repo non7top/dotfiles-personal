@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # check_certificate_chain.py:
 # does exactly what the name suggests.
@@ -11,7 +11,7 @@
 # LICENSE:
 #   MIT License
 #
-# TODO: 
+# TODO:
 # - Add interface to certificate-transparency.
 # - Check/Verify certificates.
 #
@@ -21,17 +21,17 @@ import M2Crypto.SSL
 def main():
     server  = str(sys.argv[1])
     port    = int(sys.argv[2])
-    
+
     tls_context = M2Crypto.SSL.Context();
     # we want to check unknown CAs as well
     tls_context.set_allow_unknown_ca(True)
     # sadly, certificate verification almost always fails.
     tls_context.set_verify(M2Crypto.SSL.verify_none, False)
- 
+
     conn = M2Crypto.SSL.Connection(tls_context)
     conn.set_tlsext_host_name(sys.argv[1])
     conn.connect((server, port))
- 
+
     chain = conn.get_peer_cert_chain()
 
     print("\n>> Certificate Chain:\n")
@@ -69,4 +69,3 @@ if __name__ == '__main__':
        exit(1)
 
     main()
-
