@@ -46,7 +46,6 @@ syntax enable             " enable syntax highlighting (previously syntax on).
 "set number                " show line numbers
 set laststatus=2          " last window always has a statusline
 filetype indent on        " activates indenting for files
-set nohlsearch            " Don't continue to highlight searched phrases.
 set incsearch             " But do highlight as you type your search.
 set ignorecase            " Make searches case-insensitive.
 set ruler                 " Always show info along bottom.
@@ -85,34 +84,35 @@ set hlsearch              " highlight search
 " This will affect Ctrl-T and 'autoindent'.
 " Python: 4 spaces
 " C: 8 spaces (pre-existing files) or 4 spaces (new files)
-au BufRead,BufNewFile *.py,*pyw,*wsgi set shiftwidth=4
+au BufRead,BufNewFile *.py,*.pyw,*.wsgi setlocal shiftwidth=4
 
 " Number of spaces that a pre-existing tab is equal to.
 " For the amount of space used for a new tab use shiftwidth.
 " Python: 8
 " C: 8
-au BufRead,BufNewFile *py,*pyw,*.wsgi set tabstop=8
-au BufRead,BufNewFile *py,*pyw,*.wsgi set softtabstop=4
+au BufRead,BufNewFile *.py,*.pyw,*.wsgi setlocal tabstop=8
+au BufRead,BufNewFile *.py,*.pyw,*.wsgi setlocal softtabstop=4
 
 " Replace tabs with the equivalent number of spaces.
 " Also have an autocmd for Makefiles since they require hard tabs.
 " Python: yes
 " C: no
 " Makefile: no
-au BufRead,BufNewFile *.py,*.pyw,*.wsgi set expandtab
+au BufRead,BufNewFile *.py,*.pyw,*.wsgi setlocal expandtab
 
 " Use the below highlight group when displaying bad whitespace is desired
 highlight BadWhitespace ctermbg=red guibg=red
 
-" Display tabs at the beginning of a line in Python mode as bad.
-au BufRead,BufNewFile *.py,*.pyw,*.wsgi match BadWhitespace /^\t\+/
-" Make trailing whitespace be flagged as bad.
-au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+" Display tabs at the beginning of a line in Python mode and trailing whitespace as bad.
+" (:match keeps one pattern per window, so the patterns are combined per filetype.)
+au BufRead,BufNewFile *.py,*.pyw match BadWhitespace /^\t\+\|\s\+$/
+au BufRead,BufNewFile *.wsgi match BadWhitespace /^\t\+/
+au BufRead,BufNewFile *.c,*.h match BadWhitespace /\s\+$/
 
 " Wrap text after a certain number of characters
 " Python: 79
 " C: 79
-au BufRead,BufNewFile *.py,*.pyw,*.c,*.h,*.wsgi set textwidth=179
+au BufRead,BufNewFile *.py,*.pyw,*.c,*.h,*.wsgi setlocal textwidth=179
 
 " Turn off settings in 'formatoptions' relating to comment formatting.
 " - c : do not automatically insert the comment leader when wrapping based on
@@ -121,14 +121,14 @@ au BufRead,BufNewFile *.py,*.pyw,*.c,*.h,*.wsgi set textwidth=179
 " - r : do not insert the comment leader when hitting <Enter> in insert mode
 " Python: not needed
 " C: prevents insertion of '*' at the beginning of every line in a comment
-au BufRead,BufNewFile *.c,*.h set formatoptions-=c formatoptions-=o formatoptions-=r
+au BufRead,BufNewFile *.c,*.h setlocal formatoptions-=c formatoptions-=o formatoptions-=r
 
 " Use UNIX (\n) line endings.
 " Only used for new files so as to not force existing files to change their
 " line endings.
 " Python: yes
 " C: yes
-au BufNewFile *.py,*.pyw,*.c,*.h,*.wsgi set fileformat=unix
+au BufNewFile *.py,*.pyw,*.c,*.h,*.wsgi setlocal fileformat=unix
 
 
 " ----------------------------------------------------------------------------
@@ -152,7 +152,7 @@ let python_highlight_all=1
 
 " Folding based on indentation: ``set foldmethod=indent``
 "set shiftwidth=4
-autocmd BufRead *.py set smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
+autocmd BufRead *.py setlocal smartindent cinwords=if,elif,else,for,while,try,except,finally,def,class
 au BufRead,BufNewFile *.py,*.pyw,*.wsgi set syntax=python
 autocmd BufReadPost *.tpl :e ++enc=cp1251
 autocmd BufWritePre *.tpl :set fileencoding=cp1251
@@ -189,7 +189,7 @@ function! ExecNDisplay()
   "execute "1 . 'wincmd e'"
 endfunction
 
-:nmap <F9> :call Setup_ExecNDisplay()<CR>
+:nmap <F12> :call Setup_ExecNDisplay()<CR>
 :nmap <F10> :call ExecNDisplay()<CR>
 
 nmap <F5> :w<CR>:silent !chmod 755 %<CR>:!./% <CR>
@@ -215,7 +215,7 @@ augroup LargeFile
  autocmd BufReadPre * let f=getfsize(expand("<afile>")) | if f > g:LargeFile || f == -2 | call LargeFile() | endif
 augroup END
 
-function LargeFile()
+function! LargeFile()
  " no syntax highlighting etc
  set eventignore+=FileType
  " save memory when other file is viewed
@@ -225,7 +225,10 @@ function LargeFile()
  " no undo possible
  setlocal undolevels=-1
  " display message
- autocmd VimEnter *  echo "The file is larger than " . (g:LargeFile / 1024 / 1024) . " MB, so some options are changed (see .vimrc for details)."
+ augroup LargeFileMsg
+   autocmd!
+   autocmd VimEnter *  echo "The file is larger than " . (g:LargeFile / 1024 / 1024) . " MB, so some options are changed (see .vimrc for details)."
+ augroup END
 endfunction
 
 autocmd Filetype ruby setlocal ts=2 sts=2 sw=2
@@ -266,9 +269,9 @@ au BufNewFile */roles/*.rb 0r ~/.vim/chef_role.rb.skel
 " in makefiles, don't expand tabs to spaces, since actual tab characters are
 " needed, and have indentation at 8 chars to be sure that all indents are tabs
 " (despite the mappings later):
-autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0
+autocmd FileType make setlocal noexpandtab shiftwidth=8 softtabstop=0
 
-autocmd FileType md set textwidth=80
+autocmd FileType markdown setlocal textwidth=80
 
 " Disable annoying beeping
 set noerrorbells
