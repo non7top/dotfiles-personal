@@ -45,11 +45,13 @@ fi
 
 function app_prompt_k8s() {
   if [ -n "$KUBECONFIG" ]; then
-      # context namespace
-      k8s_cluster_name=$(kubectl config view --minify --output 'jsonpath={.contexts[0].name}'|sed -e 's/eks_k8s-//' -e 's/-eks-cluster//')
+      # one kubectl call per render: context and namespace, tab separated
+      local k8s_cluster_name k8s_ns k8s_prompt
+      IFS=$'\t' read -r k8s_cluster_name k8s_ns < <(kubectl config view --minify --output 'jsonpath={.contexts[0].name}{"\t"}{..namespace}')
+      k8s_cluster_name=${k8s_cluster_name/eks_k8s-/}
+      k8s_cluster_name=${k8s_cluster_name/-eks-cluster/}
       k8s_prompt="\[\e[34m\]$k8s_cluster_name${RESET}"
-      k8s_ns=$(kubectl config view --minify --output 'jsonpath={..namespace}')
-      if [ ! -z $k8s_ns ]; then
+      if [ -n "$k8s_ns" ]; then
           k8s_prompt="${k8s_prompt}\[\e[44m\][${k8s_ns}]${RESET}"
       fi
       echo "$k8s_prompt"
