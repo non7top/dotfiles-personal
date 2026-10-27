@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Fresh-machine bootstrap test: run bootstrap.sh exactly as the README
-# quick-start does, then verify every thing it promises to install —
+# quick-start does, then verify every thing it promises to install --
 # regardless of whether the script itself exited 0. Runs inside the
 # disposable bootstrap container (make test-bootstrap).
 set -uo pipefail
 
-REPO=${REPO:-/repo}
+# /repo is mounted read-only, but a real clone is writable and bootstrap writes
+# plug.vim through ~/.vim into it, so test against a writable copy.
+cp -a "${REPO:-/repo}" "$HOME/Dotfiles"
+REPO=$HOME/Dotfiles
 pass=0 fail=0
 ok()  { echo "  ok: $1"; pass=$((pass + 1)); }
 bad() { echo "  FAIL: $1"; fail=$((fail + 1)); }
@@ -18,7 +21,7 @@ cd "$HOME"
 if bash "$REPO/bootstrap.sh"; then
     ok "bootstrap.sh exited 0"
 else
-    bad "bootstrap.sh exited non-zero — every step after the failure was skipped"
+    bad "bootstrap.sh exited non-zero -- every step after the failure was skipped"
 fi
 
 # What an interactive shell would have on PATH after bootstrap
@@ -44,7 +47,7 @@ if command -v asdf >/dev/null 2>&1; then
         fi
     done < "$REPO/_tool-versions"
 else
-    bad "asdf missing entirely — skipping per-tool checks"
+    bad "asdf missing entirely -- skipping per-tool checks"
 fi
 
 echo "== helm plugins"
@@ -59,7 +62,7 @@ if command -v helm >/dev/null 2>&1; then
         fi
     done
 else
-    bad "helm not on PATH — plugin registration silently skipped"
+    bad "helm not on PATH -- plugin registration silently skipped"
 fi
 
 echo "== krew plugins"
@@ -73,7 +76,7 @@ if command -v kubectl-krew >/dev/null 2>&1 || command -v krew >/dev/null 2>&1; t
         fi
     done < "$REPO/_krew-plugins"
 else
-    bad "krew not on PATH — krew plugins silently skipped"
+    bad "krew not on PATH -- krew plugins silently skipped"
 fi
 
 echo "== gh extensions"
@@ -90,7 +93,7 @@ if command -v gh >/dev/null 2>&1; then
         fi
     done < "$REPO/_gh-extensions"
 else
-    bad "gh not on PATH — gh extensions silently skipped"
+    bad "gh not on PATH -- gh extensions silently skipped"
 fi
 
 echo "== uv tools"
@@ -115,7 +118,7 @@ if command -v npm >/dev/null 2>&1; then
         fi
     done < "$REPO/_npm-global-tools"
 else
-    bad "npm not on PATH (nodejs asdf install failed?) — npm step would have aborted the script"
+    bad "npm not on PATH (nodejs asdf install failed?) -- npm step would have aborted the script"
 fi
 
 echo "== vim-plug"
