@@ -4,6 +4,7 @@ ignore = [
     '.gitignore',
     '.github',
     '.dotfilesrc',
+    '.actrc',
     '.claude',
     '.pre-commit-config.yaml',
     'bootstrap.sh',
