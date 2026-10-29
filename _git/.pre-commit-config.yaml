@@ -16,6 +16,9 @@ repos:
   - id: fix-smartquotes
   - id: fix-spaces
   - id: fix-unicode-dashes
+    args:
+    - --single-hyphen-codepoints=2010,2011,FE63,2012,2013,2212,02D7,2796,FF0D,2014,FE58
+    - --double-hyphen-codepoints=
   - id: fix-ligatures
   - id: forbid-bidi-controls
 - repo: https://github.com/gruntwork-io/pre-commit
