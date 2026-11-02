@@ -67,8 +67,14 @@ else
         https://github.com/asdf-vm/asdf/releases/latest | sed 's|.*/tag/v||')
     [ -n "$ASDF_VERSION" ] || die "could not resolve latest asdf version
       fix: check network access to github.com, then re-run bootstrap.sh"
+    case "$(uname -m)" in
+        x86_64)        ASDF_ARCH=amd64 ;;
+        aarch64|arm64) ASDF_ARCH=arm64 ;;
+        *) die "no asdf release binary for architecture $(uname -m)
+      fix: install asdf by hand, then re-run bootstrap.sh" ;;
+    esac
     info "Downloading asdf v${ASDF_VERSION}..."
-    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz" \
+    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-${ASDF_ARCH}.tar.gz" \
         | tar -xz -C "$HOME/.local/bin" asdf
     export PATH="$HOME/.local/bin:$PATH"
     success "asdf v${ASDF_VERSION} installed"
@@ -259,7 +265,7 @@ else
     rm -rf "$SMP_TMP"
 fi
 
-# Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
+# Sync dotfiles (skip in CI -- runner already has ~/.bashrc etc.)
 if ! command -v dotfiles &>/dev/null; then
     skip "dotfiles command not available, skipping sync" \
          "needs the uv tools step above to succeed; re-run bootstrap.sh once uv is installed"
@@ -289,7 +295,7 @@ fi
 
 echo ""
 if [ ${#INCOMPLETE[@]} -gt 0 ]; then
-    echo -e "${RED}  ✗ Bootstrap INCOMPLETE — ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
+    echo -e "${RED}  ✗ Bootstrap INCOMPLETE -- ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
     for item in "${INCOMPLETE[@]}"; do
         echo -e "${RED}    - ${item}${RESET}" >&2
     done
