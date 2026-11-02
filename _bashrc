@@ -176,28 +176,34 @@ if [[ -d "$HOME/perl5" ]]; then
   export PERL_MB_OPT="--install_base $HOME/perl5";
   export PERL_MM_OPT="INSTALL_BASE=$HOME/perl5";
   export PERL5LIB="$HOME/perl5/lib/perl5:$PERL5LIB";
-  export PATH="$HOME/perl5/bin:$PATH";
   eval "$(perl -I"$HOME/perl5/lib/perl5" -Mlocal::lib)"
 fi
-
-export PATH="$HOME/.java/bin:$PATH"
 
 #OktaAWSCLI
 if [[ -f "$HOME/.okta/bash_functions" ]]; then
     . "$HOME/.okta/bash_functions"
 fi
-if [[ -d "$HOME/.okta/bin" && ":$PATH:" != *":$HOME/.okta/bin:"* ]]; then
-    PATH="$HOME/.okta/bin:$PATH"
-fi
 
+# PATH: the only place it is changed. Lowest precedence first, each entry goes in front of the
+# previous ones; entries already present are left where they are, so re-sourcing is harmless.
+path_prepend() { case ":$PATH:" in *":$1:"*) ;; *) PATH="$1:$PATH" ;; esac; }
+path_append() { case ":$PATH:" in *":$1:"*) ;; *) PATH="$PATH:$1" ;; esac; }
+
+path_append "$HOME/.bin"
+[[ -d "$HOME/perl5/bin" ]] && path_prepend "$HOME/perl5/bin"
+path_prepend "$HOME/.java/bin"
+[[ -d "$HOME/.okta/bin" ]] && path_prepend "$HOME/.okta/bin"
 # asdf: source shell integration for bash-based install, or add shims for Go binary install
 if [ -f "$HOME/.asdf/asdf.sh" ]; then
     . "$HOME/.asdf/asdf.sh"
 else
-    export PATH="$HOME/.local/bin:$HOME/.asdf/shims:$PATH"
+    path_prepend "$HOME/.asdf/shims"
 fi
-
-export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+path_prepend "${KREW_ROOT:-$HOME/.krew}/bin"
+path_prepend "$HOME/bin"
+path_prepend "$HOME/.local/bin"
+path_prepend "$HOME/.tfenv/bin"
+export PATH
 
 alias gcd='cd $(git root)'
 alias k='kubectl'
