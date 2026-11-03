@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Antigravity CLI window title: agent state + workspace name.
+# Antigravity CLI window title: icon + project name + status.
 #
 # Payload/config shape (title.command in ~/.gemini/antigravity-cli/settings.json,
-# JSON on stdin with .agent_state / .workspace.current_dir) per
-# https://glaforge.dev/posts/2026/06/07/customizing-antigravity-cli-title-and-statusline/
-# -- not yet cross-checked against a captured live payload on this
-# machine, so field lookups fall back gracefully (.cwd, "unknown")
-# rather than erroring if a name turns out wrong.
+# JSON on stdin with .agent_state / .workspace.project_dir / .workspace.current_dir / .cwd).
 #
 # Must NOT emit ANSI/escape sequences here -- the CLI does the actual
 # window-title injection itself, unlike the statusline command.
@@ -14,15 +10,16 @@
 input=$(cat)
 
 state=$(echo "$input" | jq -r '.agent_state // "unknown"')
-workspace=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
-workspace_name=$(basename "$workspace")
+workspace=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir // .cwd // ""')
+project=$(basename "$workspace")
+[ -z "$project" ] && project="unknown"
 
 case "$state" in
-    idle)     icon="💤" ;;
-    thinking) icon="🤔" ;;
-    running)  icon="⚙️" ;;
-    error)    icon="❌" ;;
-    *)        icon="🛰️" ;;
+    idle)            icon="💤" ;;
+    thinking)        icon="🤔" ;;
+    working|running|tool_use) icon="⚙️" ;;
+    error)           icon="❌" ;;
+    *)               icon="🛰️" ;;
 esac
 
-printf "%s Antigravity: %s — %s\n" "$icon" "$state" "$workspace_name"
+printf "%s %s - %s\n" "$icon" "$project" "$state"
