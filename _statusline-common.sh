@@ -73,13 +73,12 @@ sl_fmt_days() {
 }
 
 # Git segment: "<dirname> [<branch>] +N -M" or "not in git repo".
-# cwd and branch are passed in since each tool sources branch/cwd
-# differently (Claude: .worktree.branch + git fallback; Antigravity:
-# .vcs.branch directly).
 sl_git_segment() {
     local cwd=$1 branch=$2
     local dir_name
     dir_name=$(basename "$cwd")
+
+    [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
     if [ -z "$branch" ]; then
         sl_seg "${sl_light_yellow}not in git repo${sl_reset}"
