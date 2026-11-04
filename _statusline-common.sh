@@ -75,14 +75,20 @@ sl_fmt_days() {
 # Git segment: "<dirname> [<branch>] +N -M" or "not in git repo".
 sl_git_segment() {
     local cwd=$1 branch=$2
-    local dir_name
-    dir_name=$(basename "$cwd")
+    local repo_root dir_name
 
+    repo_root=$(git --no-optional-locks -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
     [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
     if [ -z "$branch" ]; then
         sl_seg "${sl_light_yellow}not in git repo${sl_reset}"
         return
+    fi
+
+    if [ -n "$repo_root" ]; then
+        dir_name=$(basename "$repo_root")
+    else
+        dir_name=$(basename "$cwd")
     fi
 
     local diff_stat added removed diff_part

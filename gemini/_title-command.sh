@@ -11,7 +11,12 @@ input=$(cat)
 
 state=$(echo "$input" | jq -r '.agent_state // "unknown"')
 workspace=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir // .cwd // ""')
-project=$(basename "$workspace")
+repo_root=$(git --no-optional-locks -C "$workspace" rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$repo_root" ]; then
+    project=$(basename "$repo_root")
+else
+    project=$(basename "$workspace")
+fi
 [ -z "$project" ] && project="unknown"
 
 case "$state" in
