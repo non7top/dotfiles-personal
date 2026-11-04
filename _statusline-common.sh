@@ -74,14 +74,26 @@ sl_fmt_days() {
 
 # Git segment: "<dirname> [<branch>] +N -M" or "not in git repo".
 sl_git_segment() {
-    local cwd=$1 branch=$2
+    local cwd=$1 branch=$2 mode=${3:-}
     local repo_root dir_name
 
     repo_root=$(git --no-optional-locks -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
     [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
+    local mode_part=""
+    if [ -n "$mode" ]; then
+        local mode_color
+        case "$mode" in
+            auto)   mode_color="${sl_green}" ;;
+            plan)   mode_color="${sl_yellow}" ;;
+            manual) mode_color="${sl_cyan}" ;;
+            *)      mode_color="${sl_magenta}" ;;
+        esac
+        mode_part=" ${mode_color}(${mode})${sl_reset}"
+    fi
+
     if [ -z "$branch" ]; then
-        sl_seg "${sl_light_yellow}not in git repo${sl_reset}"
+        sl_seg "${sl_light_yellow}not in git repo${sl_reset}${mode_part}"
         return
     fi
 
@@ -102,7 +114,7 @@ sl_git_segment() {
     [ "$added"   -gt 0 ] && diff_part="${diff_part} ${sl_green}+${added}${sl_reset}"
     [ "$removed" -gt 0 ] && diff_part="${diff_part} ${sl_red}-${removed}${sl_reset}"
 
-    sl_seg "${sl_yellow}${dir_name}${sl_reset} ${sl_magenta}[${branch}]${sl_reset}${diff_part}"
+    sl_seg "${sl_yellow}${dir_name}${sl_reset} ${sl_magenta}[${branch}]${sl_reset}${diff_part}${mode_part}"
 }
 
 # Renders one "<label> [<bar>] <pct>% <reset-suffix>" segment plus its

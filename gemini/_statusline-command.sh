@@ -15,6 +15,7 @@ ctx_pct=$(echo "$input"  | jq -r '(.context_window.used_percentage // 0) | round
 branch=$(echo "$input"   | jq -r '.vcs.branch // ""')
 cwd=$(echo "$input"      | jq -r '.cwd // ""')
 [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
+mode=$(echo "$input"     | jq -r '.permission_mode // .mode // ""')
 cols=$(echo "$input"     | jq -r '.terminal_width // 80')
 
 # Antigravity gives *remaining fraction* + *relative* seconds-to-reset,
@@ -43,7 +44,7 @@ argon_color=$(sl_color_for_pct "$argon_pct" 50 80 "$sl_magenta")
 p3p5h_color=$(sl_color_for_pct "$p3p5h_pct" 50 80 "$sl_cyan")
 p3pwk_color=$(sl_color_for_pct "$p3pwk_pct" 50 80 "$sl_magenta")
 
-git_seg=$(sl_git_segment "$cwd" "$branch")
+git_seg=$(sl_git_segment "$cwd" "$branch" "$mode")
 
 sl_usage_segment "$ctx_pct" "$ctx_color" "ctx" "" ctx_seg narrow_ctx_seg
 sl_usage_segment "$gem5h_pct" "$gem5h_color" "♊5h" " ↺ ${gem5h_reset_str}" gem5h_seg narrow_gem5h_seg
