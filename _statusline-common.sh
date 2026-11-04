@@ -73,17 +73,34 @@ sl_fmt_days() {
 }
 
 # Git segment: "<dirname> [<branch>] +N -M" or "not in git repo".
-# cwd and branch are passed in since each tool sources branch/cwd
-# differently (Claude: .worktree.branch + git fallback; Antigravity:
-# .vcs.branch directly).
 sl_git_segment() {
-    local cwd=$1 branch=$2
-    local dir_name
-    dir_name=$(basename "$cwd")
+    local cwd=$1 branch=$2 mode=${3:-}
+    local repo_root dir_name
+
+    repo_root=$(git --no-optional-locks -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
+    [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+    local mode_part=""
+    if [ -n "$mode" ]; then
+        local mode_color
+        case "$mode" in
+            auto|accept-edits) mode_color="${sl_green}" ;;
+            plan)              mode_color="${sl_yellow}" ;;
+            manual|default)    mode_color="${sl_cyan}" ;;
+            *)                 mode_color="${sl_magenta}" ;;
+        esac
+        mode_part=" ${mode_color}(${mode})${sl_reset}"
+    fi
 
     if [ -z "$branch" ]; then
-        sl_seg "${sl_light_yellow}not in git repo${sl_reset}"
+        sl_seg "${sl_light_yellow}not in git repo${sl_reset}${mode_part}"
         return
+    fi
+
+    if [ -n "$repo_root" ]; then
+        dir_name=$(basename "$repo_root")
+    else
+        dir_name=$(basename "$cwd")
     fi
 
     local diff_stat added removed diff_part
@@ -97,7 +114,7 @@ sl_git_segment() {
     [ "$added"   -gt 0 ] && diff_part="${diff_part} ${sl_green}+${added}${sl_reset}"
     [ "$removed" -gt 0 ] && diff_part="${diff_part} ${sl_red}-${removed}${sl_reset}"
 
-    sl_seg "${sl_yellow}${dir_name}${sl_reset} ${sl_magenta}[${branch}]${sl_reset}${diff_part}"
+    sl_seg "${sl_yellow}${dir_name}${sl_reset} ${sl_magenta}[${branch}]${sl_reset}${diff_part}${mode_part}"
 }
 
 # Renders one "<label> [<bar>] <pct>% <reset-suffix>" segment plus its
