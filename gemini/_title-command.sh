@@ -22,7 +22,7 @@ fi
 case "$state" in
     idle)            icon="💤" ;;
     thinking)        icon="🤔" ;;
-    working|running|tool_use) icon="⚙️" ;;
+    working|running|tool_use) icon="🛰️" ;;
     error)           icon="❌" ;;
     *)               icon="🛰️" ;;
 esac

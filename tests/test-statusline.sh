@@ -46,17 +46,17 @@ else
 fi
 
 out=$(echo "{\"agent_state\": \"working\", \"workspace\": {\"project_dir\": \"$TEST_REPO\"}}" | bash "$TITLE_CMD")
-if [ "$out" = "⚙️ my-project - working" ]; then
+if [ "$out" = "🛰️ my-project - working" ]; then
     ok "title: working state formatting"
 else
-    bad "title: working state expected '⚙️ my-project - working', got '$out'"
+    bad "title: working state expected '🛰️ my-project - working', got '$out'"
 fi
 
 out=$(echo "{\"agent_state\": \"tool_use\", \"workspace\": {\"project_dir\": \"$TEST_REPO\"}}" | bash "$TITLE_CMD")
-if [ "$out" = "⚙️ my-project - tool_use" ]; then
+if [ "$out" = "🛰️ my-project - tool_use" ]; then
     ok "title: tool_use state formatting"
 else
-    bad "title: tool_use state expected '⚙️ my-project - tool_use', got '$out'"
+    bad "title: tool_use state expected '🛰️ my-project - tool_use', got '$out'"
 fi
 
 out=$(echo "{\"agent_state\": \"error\", \"workspace\": {\"project_dir\": \"$TEST_REPO\"}}" | bash "$TITLE_CMD")
