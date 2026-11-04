@@ -15,7 +15,7 @@ ctx_pct=$(echo "$input"  | jq -r '(.context_window.used_percentage // 0) | round
 branch=$(echo "$input"   | jq -r '.vcs.branch // ""')
 cwd=$(echo "$input"      | jq -r '.cwd // ""')
 [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
-mode=$(echo "$input"     | jq -r '.permission_mode // .mode // ""')
+mode=$(echo "$input"     | jq -r '.cycle_mode // .permission_mode // .mode // ""')
 cols=$(echo "$input"     | jq -r '.terminal_width // 80')
 
 # Antigravity gives *remaining fraction* + *relative* seconds-to-reset,

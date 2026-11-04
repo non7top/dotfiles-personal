@@ -15,7 +15,7 @@ week_resets_at=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // 0')
 branch=$(echo "$input"         | jq -r '.worktree.branch // ""')
 cwd=$(echo "$input"            | jq -r '.cwd // ""')
 [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
-mode=$(echo "$input"           | jq -r '.permission_mode // .mode // ""')
+mode=$(echo "$input"           | jq -r '.cycle_mode // .permission_mode // .mode // ""')
 
 now=$(date +%s)
 reset_str=$(sl_fmt_reset $(( resets_at - now )))

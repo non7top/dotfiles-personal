@@ -166,6 +166,14 @@ else
     bad "statusline: expected compact 3p segment, got '$out'"
 fi
 
+cycle_payload="{\"cwd\": \"$TEST_REPO/subdir\", \"terminal_width\": 200, \"cycle_mode\": \"accept-edits\"}"
+out=$(echo "$cycle_payload" | bash "$STATUSLINE_CMD" | strip_ansi)
+if [[ "$out" == *"my-project [main]"*"(accept-edits)"* ]]; then
+    ok "statusline: displays cycle_mode (accept-edits)"
+else
+    bad "statusline: expected (accept-edits), got '$out'"
+fi
+
 echo
 echo "passed=$pass failed=$fail"
 [ "$fail" -eq 0 ]

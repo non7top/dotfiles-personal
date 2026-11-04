@@ -84,10 +84,10 @@ sl_git_segment() {
     if [ -n "$mode" ]; then
         local mode_color
         case "$mode" in
-            auto)   mode_color="${sl_green}" ;;
-            plan)   mode_color="${sl_yellow}" ;;
-            manual) mode_color="${sl_cyan}" ;;
-            *)      mode_color="${sl_magenta}" ;;
+            auto|accept-edits) mode_color="${sl_green}" ;;
+            plan)              mode_color="${sl_yellow}" ;;
+            manual|default)    mode_color="${sl_cyan}" ;;
+            *)                 mode_color="${sl_magenta}" ;;
         esac
         mode_part=" ${mode_color}(${mode})${sl_reset}"
     fi
