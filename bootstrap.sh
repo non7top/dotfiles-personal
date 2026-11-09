@@ -251,16 +251,6 @@ else
          "fix the nodejs asdf install above, then re-run bootstrap.sh"
 fi
 
-# Install vim-plug
-if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
-    success "vim-plug already installed"
-else
-    info "Installing vim-plug..."
-    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
-        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-    success "vim-plug installed"
-fi
-
 # session-manager-plugin: `aws ssm start-session` shells out to it, and
 # there is no asdf plugin. Extracting the .deb needs no sudo, unlike dpkg -i.
 # Tracks "latest" like asdf/vim-plug above; amd64 only like the asdf step.
@@ -309,6 +299,16 @@ elif [ -z "${CI:-}" ]; then
         skip "dotfiles sync failed" \
              "error is directly above; retry with: dotfiles -R ${SCRIPT_DIR} --sync"
     fi
+fi
+
+# After the sync: it moves a real ~/.vim to ~/.vim.bak, which would take plug.vim with it.
+if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
+    success "vim-plug already installed"
+else
+    info "Installing vim-plug..."
+    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    success "vim-plug installed"
 fi
 
 echo ""
