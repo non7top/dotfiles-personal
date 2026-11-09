@@ -9,11 +9,11 @@ fi
 # export SYSTEMD_PAGER=
 
 # User specific aliases and functions
-test -f $HOME/spm/local.env && source $HOME/spm/local.env
+test -f "$HOME/spm/local.env" && source "$HOME/spm/local.env"
 test -f /usr/bin/chef && eval "$(chef shell-init bash)"
 
-if [ -d $HOME/.local_env ]; then
-    for i in $HOME/.local_env/*.env ; do
+if [ -d "$HOME/.local_env" ]; then
+    for i in "$HOME"/.local_env/*.env ; do
         if [ -r "$i" ]; then
             if [ "${-#*i}" != "$-" ]; then
                 . "$i"
@@ -44,12 +44,14 @@ fi
 
 
 function app_prompt_k8s() {
-  if [ ! -z $KUBECONFIG ]; then
-      # context namespace
-      k8s_cluster_name=$(kubectl config view --minify --output 'jsonpath={.contexts[0].name}'|sed -e 's/eks_k8s-//' -e 's/-eks-cluster//')
+  if [ -n "$KUBECONFIG" ]; then
+      # one kubectl call per render: context and namespace, tab separated
+      local k8s_cluster_name k8s_ns k8s_prompt
+      IFS=$'\t' read -r k8s_cluster_name k8s_ns < <(kubectl config view --minify --output 'jsonpath={.contexts[0].name}{"\t"}{..namespace}')
+      k8s_cluster_name=${k8s_cluster_name/eks_k8s-/}
+      k8s_cluster_name=${k8s_cluster_name/-eks-cluster/}
       k8s_prompt="\[\e[34m\]$k8s_cluster_name${RESET}"
-      k8s_ns=$(kubectl config view --minify --output 'jsonpath={..namespace}')
-      if [ ! -z $k8s_ns ]; then
+      if [ -n "$k8s_ns" ]; then
           k8s_prompt="${k8s_prompt}\[\e[44m\][${k8s_ns}]${RESET}"
       fi
       echo "$k8s_prompt"
@@ -65,7 +67,7 @@ function app_prompt() {
     RESET='\[\e[0m\]'
 
     # Prompt for k8s
-    if [ ! -z $KUBECONFIG ]; then
+    if [ -n "$KUBECONFIG" ]; then
         APP_PROMPT="${APP_PROMPT}$(app_prompt_k8s) "
     fi
 
@@ -175,7 +177,7 @@ if [[ -d "$HOME/perl5" ]]; then
   export PERL_MM_OPT="INSTALL_BASE=$HOME/perl5";
   export PERL5LIB="$HOME/perl5/lib/perl5:$PERL5LIB";
   export PATH="$HOME/perl5/bin:$PATH";
-  eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+  eval "$(perl -I"$HOME/perl5/lib/perl5" -Mlocal::lib)"
 fi
 
 export PATH="$HOME/.java/bin:$PATH"
@@ -206,10 +208,15 @@ function jsonArrayToTable(){
 }
 
 function assume-role() {
-OUT=$(aws sts assume-role --role-arn $1 --role-session-name $2);\
-export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId');\
-export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey');\
-export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken');
+    if [ $# -ne 2 ]; then
+        echo "usage: assume-role <role-arn> <session-name>" >&2
+        return 1
+    fi
+    local out
+    out=$(aws sts assume-role --role-arn "$1" --role-session-name "$2") || return 1
+    export AWS_ACCESS_KEY_ID=$(jq -r '.Credentials.AccessKeyId' <<<"$out")
+    export AWS_SECRET_ACCESS_KEY=$(jq -r '.Credentials.SecretAccessKey' <<<"$out")
+    export AWS_SESSION_TOKEN=$(jq -r '.Credentials.SessionToken' <<<"$out")
 }
 
 #export TMPDIR=${TMPDIR:-/tmp}
