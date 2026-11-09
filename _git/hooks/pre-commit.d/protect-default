@@ -5,9 +5,13 @@
 set -e
 set -o pipefail
 
-curr_branch=$(git symbolic-ref HEAD|sed -e 's#refs/heads/##')
+# Detached HEAD (e.g. mid-rebase) is not the default branch
+curr_branch=$(git symbolic-ref -q --short HEAD || true)
+[ -n "$curr_branch" ] || exit 0
+
+# `git sd` prints "HEAD" when origin/HEAD is unset
 def_branch=$(git sd)
-if [ -z "$def_branch" ]; then
+if [ -z "$def_branch" ] || [ "$def_branch" = "HEAD" ]; then
     if git remote | grep -q .; then
         echo "protect-default: could not determine default branch (run: git remote set-head origin --auto)" >&2
     fi
