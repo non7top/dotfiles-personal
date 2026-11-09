@@ -58,6 +58,8 @@ mutate "pre-push dispatcher: no stdin replay to scripts" pre-push 's|"\$file" "\
 mutate "pre-push dispatcher: lfs failure ignored"    pre-push 's|git lfs pre-push "\$@" < "\$refs" \|\| ret=1|git lfs pre-push "$@" < "$refs" \|\| true|' dispatchers.bats
 mutate "pre-commit dispatcher: failures ignored"     pre-commit 's|        ret=1|        ret=0|'                       dispatchers.bats
 mutate "commit-msg dispatcher: failures ignored"     commit-msg 's|        ret=1|        ret=0|'                       dispatchers.bats
+mutate "commit-msg dispatcher: unquoted arguments"   commit-msg 's|"\$file" "\$@"|"$file" $*|'                    dispatchers.bats
+mutate "pre-commit dispatcher: empty .d runs the glob" pre-commit 's|^shopt -s nullglob|true|'                          dispatchers.bats
 mutate "protect-default: never blocks"               pre-commit.d/protect-default 's|    exit 1|    exit 0|'           protect-default.bats
 mutate "protect-default: protects nothing"           pre-commit.d/protect-default 's|^set -e$|exit 0|'                 protect-default.bats
 mutate "terraform-docs: README changes ignored"      pre-commit.d/terraform-docs 's|    exit 1|    exit 0|'              terraform-docs.bats

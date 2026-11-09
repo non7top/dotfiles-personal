@@ -13,6 +13,7 @@
 
 ret=0
 
+shopt -s nullglob
 for file in "${BASH_SOURCE[0]}.d"/*; do
     "$file"
     code=$?
