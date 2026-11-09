@@ -46,13 +46,14 @@ mutate "lib: CLOSED no longer blocks"               $LIB 's/"\$pr_state" == "CLO
 mutate "lib: block returns success"                 $LIB 's|        return 1|        return 0|'                         block-closed-pr-branch.bats
 mutate "lib: not --head branch"                     $LIB 's|--head "\$branch"|--head "x"|'                             block-closed-pr-push.bats
 mutate "lib: gh failure becomes a block"            $LIB 's/ || true)/)/'                                              block-closed-pr-branch.bats
-mutate "push hook: never blocks"                    $PB  's|closed_pr_check "\$branch" "Push" \|\| ret=1|true|'        block-closed-pr-push.bats
+mutate "push hook: never blocks"                    $PB  's|closed_pr_check "\$branch" "Push" "\$repo" \|\| ret=1|true|'        block-closed-pr-push.bats
 mutate "push hook: exits before checking"           $PB  's|^set -euo pipefail|exit 0|'                                block-closed-pr-push.bats
-mutate "push hook: only the last ref decides"       $PB  's#closed_pr_check "\$branch" "Push" || ret=1#closed_pr_check "$branch" "Push" \&\& ret=0 || ret=1#' block-closed-pr-push.bats
+mutate "push hook: only the last ref decides"       $PB  's#closed_pr_check "\$branch" "Push" "\$repo" || ret=1#closed_pr_check "$branch" "Push" "$repo" \&\& ret=0 || ret=1#' block-closed-pr-push.bats
 mutate "push hook: deletions are blocked"           $PB  's|\[\[ "\$local_sha" =~ \^0+\$ \]\] && continue|true|'       block-closed-pr-push.bats
 mutate "push hook: default branches checked"        $PB  's|\[\[ "\$branch" == "main".*|true|'                         block-closed-pr-push.bats
 mutate "push hook: branch refs skip widened to tags" $PB 's|refs/heads/\*|refs/*|'                                     block-closed-pr-push.bats
-mutate "push hook: non-origin skip removed"         $PB  's|^\[\[ "\${1:-}" == "origin" \]\] .*|true|'                 block-closed-pr-push.bats
+mutate "push hook: other remotes checked in origin's repo" $PB 's#repo=\$(remote_repo "\${2:-}") || exit 0#repo=""#' block-closed-pr-push.bats
+mutate "lib: repo argument ignored"                 $LIB 's#\${repo:+-R "\$repo"} ##'                                  block-closed-pr-push.bats
 mutate "pre-push dispatcher: script failure ignored" pre-push 's|"\$file" "\$@" < "\$refs" \|\| ret=1|"$file" "$@" < "$refs" \|\| true|' dispatchers.bats
 mutate "pre-push dispatcher: no stdin replay to scripts" pre-push 's|"\$file" "\$@" < "\$refs"|"$file" "$@" < /dev/null|'   dispatchers.bats
 mutate "pre-push dispatcher: lfs failure ignored"    pre-push 's|git lfs pre-push "\$@" < "\$refs" \|\| ret=1|git lfs pre-push "$@" < "$refs" \|\| true|' dispatchers.bats

@@ -22,7 +22,7 @@ push_hook() {
     local remote=$1 input=""
     shift
     for line in "$@"; do input+="$line"$'\n'; done
-    run "$HOOKS/pre-push.d/block-closed-pr-push" "$remote" "$T/origin.git" <<<"$input"
+    run "$HOOKS/pre-push.d/block-closed-pr-push" "$remote" "${REMOTE_URL:-$T/origin.git}" <<<"$input"
 }
 
 branch_line() { echo "refs/heads/${2:-local} $SHA refs/heads/$1 $ZERO40"; }
@@ -120,8 +120,28 @@ branch_line() { echo "refs/heads/${2:-local} $SHA refs/heads/$1 $ZERO40"; }
 
 # -- scope limits (documented gaps) -----------------------------------------------------------
 
-@test "KNOWN GAP: pushes to a remote other than origin are not checked" {
-    push_hook fork "$(branch_line "$MERGED_BR")"
+@test "another remote: the PR is looked up in the repo named by its URL, not origin's" {
+    REMOTE_URL=https://github.com/someone/fork.git push_hook fork "$(branch_line "$MERGED_BR")"
+    assert_failure 1
+    assert_output --partial "Push blocked: branch '$MERGED_BR' has a MERGED pull request."
+    assert_gh_queried_closed_prs "$MERGED_BR"
+    grep -qF -- "-R someone/fork " <<<"$(gh_calls)"
+}
+
+@test "another remote with an scp-style URL" {
+    REMOTE_URL=git@github.com:someone/fork.git push_hook fork "$(branch_line "$MERGED_BR")"
+    assert_failure 1
+    grep -qF -- "-R someone/fork " <<<"$(gh_calls)"
+}
+
+@test "another remote on another host: the host is part of the repo" {
+    REMOTE_URL=ssh://git@ghe.example.com:2222/team/app.git push_hook corp "$(branch_line "$MERGED_BR")"
+    assert_failure 1
+    grep -qF -- "-R ghe.example.com/team/app " <<<"$(gh_calls)"
+}
+
+@test "another remote with a URL that names no repo (local path): not checked" {
+    push_hook backup "$(branch_line "$MERGED_BR")"
     assert_success
     assert_gh_not_called
 }
