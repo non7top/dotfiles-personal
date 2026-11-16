@@ -1,5 +1,6 @@
 act https://github.com/gr1m0h/asdf-act
 antigravity-cli https://github.com/modestman/asdf-antigravity-cli
+claude-code https://github.com/thlib/asdf-claude-code.git
 cosign https://github.com/non7top/asdf-cosign
 forgejo-cli https://github.com/non7top/asdf-forgejo-cli
 helm-diff https://github.com/dex4er/asdf-helm-diff
