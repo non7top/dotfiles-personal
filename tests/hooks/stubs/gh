@@ -22,6 +22,7 @@ shift 2
 head="" state=open fields="" jq_expr=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -R)      shift 2 ;;
         --head)  head=$2; shift 2 ;;
         --state) state=$2; shift 2 ;;
         --json)  fields=$2; shift 2 ;;

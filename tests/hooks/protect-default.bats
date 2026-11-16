@@ -33,13 +33,13 @@ run_hook() { run "$HOOKS/pre-commit.d/protect-default"; }
     assert_success
 }
 
-@test "KNOWN ISSUE: origin/HEAD unset: git sd yields \"HEAD\", so nothing is protected and no warning shows" {
+@test "origin/HEAD unset: allows but warns that the default branch is unknown" {
     git remote set-head origin --delete >/dev/null
     run git sd
     assert_output --partial "HEAD"
     run_hook
     assert_success
-    refute_output --partial "could not determine default branch"
+    assert_output --partial "could not determine default branch"
 }
 
 @test "no remote at all: allows silently" {
@@ -49,8 +49,8 @@ run_hook() { run "$HOOKS/pre-commit.d/protect-default"; }
     refute_output --partial "protect-default"
 }
 
-@test "KNOWN ISSUE: detached HEAD is blocked (symbolic-ref fails under set -e), e.g. during a rebase" {
+@test "detached HEAD (e.g. during a rebase) is allowed" {
     git switch -q --detach master
     run_hook
-    assert_failure
+    assert_success
 }

@@ -63,10 +63,10 @@ SCRIPT
     assert_failure 1
 }
 
-@test "pre-commit: no scripts at all fails (the unexpanded glob is run)" {
+@test "pre-commit: an empty .d dir passes" {
     mkdir "$D/pre-commit.d"
     run "$D/pre-commit"
-    assert_failure 1
+    assert_success
 }
 
 @test "commit-msg: passes the message file to every script" {
@@ -75,6 +75,21 @@ SCRIPT
     run "$D/commit-msg" .git/COMMIT_EDITMSG
     assert_success
     assert_equal "$(cat "$ORDER")" "$(printf 'a .git/COMMIT_EDITMSG\nb .git/COMMIT_EDITMSG')"
+}
+
+@test "commit-msg: a message file path with spaces stays one argument" {
+    mkdir -p "$D/commit-msg.d"
+    printf '#!/bin/bash\necho "$#" >> "%s"\n' "$ORDER" > "$D/commit-msg.d/a"
+    chmod +x "$D/commit-msg.d/a"
+    run "$D/commit-msg" "dir with spaces/COMMIT_EDITMSG"
+    assert_success
+    assert_equal "$(cat "$ORDER")" "1"
+}
+
+@test "commit-msg: an empty .d dir passes" {
+    mkdir "$D/commit-msg.d"
+    run "$D/commit-msg" msgfile
+    assert_success
 }
 
 @test "commit-msg: a failing script fails the hook but the rest still run" {
@@ -122,8 +137,8 @@ SCRIPT
     assert [ ! -e "$ORDER" ]
 }
 
-@test "pre-push: no scripts at all fails (the unexpanded glob is run)" {
+@test "pre-push: an empty .d dir passes" {
     mkdir "$D/pre-push.d"
     run "$D/pre-push" origin url <<<""
-    assert_failure 1
+    assert_success
 }

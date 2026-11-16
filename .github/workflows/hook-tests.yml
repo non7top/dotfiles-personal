@@ -1,0 +1,19 @@
+name: Hook tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  hook-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Hook tests
+        run: make test-hooks
+
+      - name: Hook test mutation check
+        run: make test-hooks-mutation

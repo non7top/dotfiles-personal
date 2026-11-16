@@ -13,8 +13,9 @@
 
 ret=0
 
+shopt -s nullglob
 for file in "${BASH_SOURCE[0]}.d"/*; do
-    "$file" $*
+    "$file" "$@"
     code=$?
     echo -ne "\e[8;36;40m##### GITHOOK:\033[0m ${file} "
     if [ $code -ne 0 ]; then
