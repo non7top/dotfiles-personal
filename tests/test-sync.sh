@@ -32,6 +32,16 @@ if [ -L "$FAKEHOME/.claude/skills" ]; then
 else
     bad "package entry not linked (.claude/skills)"
 fi
+if [ -L "$FAKEHOME/.env.d" ]; then
+    ok "env drop-in dir linked (.env.d)"
+else
+    bad "env drop-in dir not linked (.env.d)"
+fi
+if [ ! -e "$FAKEHOME/.claude/README.rst" ] && [ ! -e "$FAKEHOME/.claude/_README.rst" ]; then
+    ok "claude/README.rst is not synced into .claude"
+else
+    bad "claude/README.rst was synced into .claude"
+fi
 if [ -z "$(DF --check)" ]; then
     ok "--check clean after fresh sync"
 else

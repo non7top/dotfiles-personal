@@ -12,8 +12,10 @@ fi
 test -f $HOME/spm/local.env && source $HOME/spm/local.env
 test -f /usr/bin/chef && eval "$(chef shell-init bash)"
 
-if [ -d $HOME/.local_env ]; then
-    for i in $HOME/.local_env/*.env ; do
+# ~/.env.d is repo-managed; ~/.env_local.d is machine-local and comes last so it overrides.
+for d in "$HOME/.env.d" "$HOME/.env_local.d"; do
+    [ -d "$d" ] || continue
+    for i in "$d"/*.env; do
         if [ -r "$i" ]; then
             if [ "${-#*i}" != "$-" ]; then
                 . "$i"
@@ -22,7 +24,7 @@ if [ -d $HOME/.local_env ]; then
             fi
         fi
     done
-fi
+done
 
 
 #source ~/.knife-block-prompt.sh
