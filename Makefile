@@ -2,12 +2,12 @@ DOCKER_UID := $(shell id -u)
 DOCKER_GID := $(shell id -g)
 export DOCKER_UID DOCKER_GID
 
-.PHONY: build test test-hooks test-statusline test-hooks-mutation test-bootstrap act act-clean shell destroy
+.PHONY: build test test-hooks test-statusline test-env-dropins test-hooks-mutation test-bootstrap act act-clean shell destroy
 
 build:
 	docker compose build
 
-test: build test-hooks test-statusline
+test: build test-hooks test-statusline test-env-dropins
 	docker compose run --rm test
 
 test-hooks: build
@@ -15,6 +15,9 @@ test-hooks: build
 
 test-statusline: build
 	docker compose run --rm test /repo/tests/test-statusline.sh
+
+test-env-dropins: build
+	docker compose run --rm test /repo/tests/test-env-dropins.sh
 
 # Applies deliberate relaxations to the hooks; every one must make the hook tests fail.
 test-hooks-mutation: build
