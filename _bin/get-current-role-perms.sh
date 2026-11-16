@@ -21,7 +21,7 @@ for POLICY in "${ROLE_POLICIES[@]}"
 do
   echo "${POLICY}"
   POL_VER=$(aws iam get-role-policy --policy-name "${POLICY}" --role-name "${MY_ROLE}" | jq -r '.Policy.DefaultVersionId')
-  aws iam get-role-policy --policy-name "${POLICY}" --role-name MRAD_Ops | jq -r '.PolicyDocument.Statement'
+  aws iam get-role-policy --policy-name "${POLICY}" --role-name "${MY_ROLE}" | jq -r '.PolicyDocument.Statement'
   echo
 done
 
