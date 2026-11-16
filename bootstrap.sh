@@ -67,8 +67,14 @@ else
         https://github.com/asdf-vm/asdf/releases/latest | sed 's|.*/tag/v||')
     [ -n "$ASDF_VERSION" ] || die "could not resolve latest asdf version
       fix: check network access to github.com, then re-run bootstrap.sh"
+    case "$(uname -m)" in
+        x86_64)        ASDF_ARCH=amd64 ;;
+        aarch64|arm64) ASDF_ARCH=arm64 ;;
+        *) die "no asdf release binary for architecture $(uname -m)
+      fix: install asdf by hand, then re-run bootstrap.sh" ;;
+    esac
     info "Downloading asdf v${ASDF_VERSION}..."
-    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-amd64.tar.gz" \
+    curl -fsSL "https://github.com/asdf-vm/asdf/releases/download/v${ASDF_VERSION}/asdf-v${ASDF_VERSION}-linux-${ASDF_ARCH}.tar.gz" \
         | tar -xz -C "$HOME/.local/bin" asdf
     export PATH="$HOME/.local/bin:$PATH"
     success "asdf v${ASDF_VERSION} installed"
@@ -168,6 +174,18 @@ else
          "fix the krew asdf install above, then re-run bootstrap.sh"
 fi
 
+# gh_ext_source <extension dir>: print OWNER/REPO the extension was installed from, empty if unknown
+gh_ext_source() {
+    local dir=$1 url
+    if [ -d "$dir/.git" ]; then
+        url=$(git -C "$dir" remote get-url origin 2>/dev/null) || return 0
+        url=${url%.git}
+        echo "${url#*github.com[:/]}"
+    elif [ -f "$dir/manifest.yml" ]; then
+        awk '$1 == "owner:" { o = $2 } $1 == "name:" { n = $2 } END { if (o && n) print o "/" n }' "$dir/manifest.yml"
+    fi
+}
+
 # Install gh extensions
 if command -v gh &>/dev/null; then
     info "Installing gh extensions..."
@@ -176,10 +194,16 @@ if command -v gh &>/dev/null; then
         ext_name="${ext##*/}"
         # check the extensions dir, not `gh extension list` -- the latter
         # refuses to run before `gh auth login` (e.g. on a fresh machine)
-        if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/${ext_name}" ]; then
+        ext_dir="${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/${ext_name}"
+        installed_from=""
+        [ -d "$ext_dir" ] && installed_from=$(gh_ext_source "$ext_dir")
+        if [ -d "$ext_dir" ] && { [ -z "$installed_from" ] || [ "${installed_from,,}" = "${ext,,}" ]; }; then
             success "gh extension ${ext_name} already installed"
+        elif [ -d "$ext_dir" ] && ! gh extension remove "${ext_name#gh-}"; then
+            skip "gh extension ${ext_name} comes from ${installed_from}, not ${ext}, and could not be removed" \
+                 "run: gh extension remove ${ext_name#gh-} && gh extension install ${ext}"
         elif gh extension install "$ext"; then
-            success "gh extension ${ext_name} installed"
+            success "gh extension ${ext_name} installed from ${ext}"
         else
             skip "gh extension FAILED: ${ext}" \
                  "error is directly above; retry with: gh extension install ${ext}"
@@ -227,16 +251,6 @@ else
          "fix the nodejs asdf install above, then re-run bootstrap.sh"
 fi
 
-# Install vim-plug
-if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
-    success "vim-plug already installed"
-else
-    info "Installing vim-plug..."
-    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
-        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-    success "vim-plug installed"
-fi
-
 # session-manager-plugin: `aws ssm start-session` shells out to it, and
 # there is no asdf plugin. Extracting the .deb needs no sudo, unlike dpkg -i.
 # Tracks "latest" like asdf/vim-plug above; amd64 only like the asdf step.
@@ -259,7 +273,7 @@ else
     rm -rf "$SMP_TMP"
 fi
 
-# Sync dotfiles (skip in CI — runner already has ~/.bashrc etc.)
+# Sync dotfiles (skip in CI -- runner already has ~/.bashrc etc.)
 if ! command -v dotfiles &>/dev/null; then
     skip "dotfiles command not available, skipping sync" \
          "needs the uv tools step above to succeed; re-run bootstrap.sh once uv is installed"
@@ -287,9 +301,19 @@ elif [ -z "${CI:-}" ]; then
     fi
 fi
 
+# After the sync: it moves a real ~/.vim to ~/.vim.bak, which would take plug.vim with it.
+if [ -f "$HOME/.vim/autoload/plug.vim" ]; then
+    success "vim-plug already installed"
+else
+    info "Installing vim-plug..."
+    curl -fsSLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    success "vim-plug installed"
+fi
+
 echo ""
 if [ ${#INCOMPLETE[@]} -gt 0 ]; then
-    echo -e "${RED}  ✗ Bootstrap INCOMPLETE — ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
+    echo -e "${RED}  ✗ Bootstrap INCOMPLETE -- ${#INCOMPLETE[@]} problem(s):${RESET}" >&2
     for item in "${INCOMPLETE[@]}"; do
         echo -e "${RED}    - ${item}${RESET}" >&2
     done

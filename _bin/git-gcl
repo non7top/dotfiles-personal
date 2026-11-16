@@ -6,6 +6,7 @@
 # 1. Prune remote branches when they are deleted or merged
 # 2. Remove local branches when their remote branches are removed
 # 3. Remove local branches when a master included squash and merge commits
+# 4. Remove local branches that have no commits beyond origin/<default branch>
 #
 # Linked worktrees whose branch is merged or squash-merged are removed first,
 # otherwise their branches cannot be deleted. Dirty and locked worktrees, and
@@ -197,6 +198,31 @@ function git_remove_squash_merged_local_branch() {
   say_finish "Finish removing out-dated local squash-merged branches"
 }
 
+# Branches whose commits are all in origin/<default>, e.g. merged with a merge
+# commit while HEAD was on another branch or the local default was stale. The
+# checks above compare against HEAD or the local default and miss them.
+# Branches at the very tip of origin/<default> have no work of their own yet
+# and are kept, like the remote variant does.
+function git_remove_upstream_merged_local_branch() {
+  say_start "Start removing local branches with no commits beyond origin default"
+  local default base branch wt
+  default=$(git sd)
+  base=origin/$default
+  while read -r branch; do
+    [[ $branch == "$default" || -n ${REPORTED[$branch]} ]] && continue
+    if [[ $(git rev-parse "$branch") == "$(git rev-parse "$base")" ]]; then
+      say_skip "Skip branch $branch: no commits of its own"
+    elif [[ $(git rev-list --count "$base..$branch") != 0 ]]; then
+      continue # unmerged, already reported by the checks above
+    elif wt=$(branch_worktree "$branch") && [[ -n $wt ]]; then
+      say_skip "Skip branch $branch: checked out in $wt"
+    else
+      act git branch -D "$branch"
+    fi
+  done < <(git for-each-ref refs/heads/ "--format=%(refname:short)")
+  say_finish "Finish removing local branches with no commits beyond origin default"
+}
+
 # Compared against origin/<default>, not the local default, so only branches
 # whose work is on the remote default get deleted.
 function git_remove_merged_remote_branches() {
@@ -227,6 +253,7 @@ function gcl() {
   git_remove_merged_worktrees
   git_remove_merged_local_branch
   git_remove_squash_merged_local_branch
+  git_remove_upstream_merged_local_branch
   if [[ $REMOTE_DELETE == 1 || $DRY_RUN == 1 ]]; then git_remove_merged_remote_branches; fi
 }
 
