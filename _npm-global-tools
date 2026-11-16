@@ -1,4 +1,6 @@
 @google/gemini-cli
+@opencode/cli
 @qwen-code/qwen-code
 asdf-bump
 cline
+openclaw
