@@ -13,6 +13,7 @@ skills, loaded on demand and pointed to from the matching section:
 
 :``docker``: running tools in throwaway non-root containers; naming, labels and lifecycle of Docker objects
 :``git-workflow``: commits, branches, PRs, merging, GitHub Actions workflows
+:``new-repo``: standard setup for a new GitHub repo (gh-repo-config, Dependabot, release-please and the forecast, conventional commits) and ``check.sh`` to audit repos
 :``ops-safety``: remote hosts, service databases, PHP web roots
 
 It is public: no hostnames, repo names, addresses or identifiers.
