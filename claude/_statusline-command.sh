@@ -12,6 +12,7 @@ sess_pct=$(echo "$input"       | jq -r '(.rate_limits.five_hour.used_percentage 
 resets_at=$(echo "$input"      | jq -r '.rate_limits.five_hour.resets_at // 0')
 week_pct=$(echo "$input"       | jq -r '(.rate_limits.seven_day.used_percentage // 0) | round')
 week_resets_at=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // 0')
+[ "$week_resets_at" != 0 ] && printf '%s %s\n' "$week_pct" "$(date +%s)" > "$HOME/.claude/weekly-usage"  # agents read the 7d % from here
 branch=$(echo "$input"         | jq -r '.worktree.branch // ""')
 cwd=$(echo "$input"            | jq -r '.cwd // ""')
 [ -z "$branch" ] && branch=$(git --no-optional-locks -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
