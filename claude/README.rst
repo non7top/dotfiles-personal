@@ -4,6 +4,19 @@ Claude Code config
 Files in this directory sync into ``~/.claude`` (``_statusline-command.sh`` becomes
 ``~/.claude/statusline-command.sh``, ``_skills`` becomes ``~/.claude/skills``).
 
+Global instructions
+-------------------
+
+``_CLAUDE.md`` is the global agent instructions file (``~/.claude/CLAUDE.md``; ``~/.claude/AGENTS.md`` is a
+symlink to it). It keeps the rules that apply to every task. Rules for one kind of task live in
+skills, loaded on demand and pointed to from the matching section:
+
+:``docker``: running tools in throwaway non-root containers; naming, labels and lifecycle of Docker objects
+:``git-workflow``: commits, branches, PRs, merging, GitHub Actions workflows
+:``ops-safety``: remote hosts, service databases, PHP web roots
+
+It is public: no hostnames, repo names, addresses or identifiers.
+
 Environment file
 ----------------
 
