@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# docker system prune -a that keeps the images listed in ~/.docker-pinned-images.
+# Extra arguments go to docker system prune (-f, --volumes, --filter until=...).
+set -uo pipefail
+
+LIST=${DOCKER_PINNED_IMAGES_FILE:-$HOME/.docker-pinned-images}
+LABEL=dotfiles.docker-pin
+
+remove_pins() {
+    docker ps -aq --filter "label=$LABEL" | xargs -r docker rm >/dev/null
+}
+
+remove_pins
+trap remove_pins EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [[ -r $LIST ]]; then
+    while IFS= read -r line; do
+        line=${line%%#*}
+        read -r image _ <<<"$line"
+        [[ -n ${image:-} ]] || continue
+        if ! docker image inspect "$image" >/dev/null 2>&1; then
+            echo "docker-clean: $image not present locally, not pinned" >&2
+            continue
+        fi
+        # A stopped container is what makes prune -a keep an image; it is never started.
+        docker create --pull never --label "$LABEL" --entrypoint /docker-clean-pin "$image" >/dev/null \
+            || echo "docker-clean: could not pin $image" >&2
+    done <"$LIST"
+else
+    echo "docker-clean: $LIST not found, nothing pinned" >&2
+fi
+
+docker system prune -a --filter "label!=$LABEL" "$@"
+rc=$?
+remove_pins
+exit "$rc"

@@ -39,6 +39,7 @@ host and the real ``$HOME`` is never touched. ``make`` passes your uid/gid throu
 
 :``make test``: ``test-hooks`` followed by the sync scenarios (``tests/test-sync.sh``)
 :``make test-hooks``: the git hook tests (bats), see below
+:``make test-docker-clean``: ``_bin/docker-clean`` against a stub ``docker``
 :``make test-hooks-mutation``: relaxes the hooks one rule at a time and requires the matching tests to fail
 :``make test-bootstrap``: runs ``bootstrap.sh`` on a fresh Ubuntu container and checks everything it promises to install
 :``make shell``: a shell in the test container
@@ -73,6 +74,19 @@ hooks tree, which is how ``mutation-check.sh`` proves the tests fail on a weaken
 ============
 Misc
 ============
+
+******
+docker
+******
+
+``docker-clean`` is ``docker system prune -a`` that keeps the images listed in ``~/.docker-pinned-images``
+(``_docker-pinned-images`` here; one image per line, ``#`` starts a comment). Extra arguments go to prune,
+for example ``docker-clean -f --volumes``.
+
+Prune -a only keeps images that a container uses, and it removes stopped containers too. So ``docker-clean``
+creates a stopped container with the label ``dotfiles.docker-pin`` for each listed image that exists locally,
+prunes with ``--filter label!=dotfiles.docker-pin``, and removes those containers again. A plain
+``docker system prune -a`` does not know about the list and removes pinned images.
 
 ***
 git
