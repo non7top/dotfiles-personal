@@ -1,0 +1,26 @@
+# Images that docker-clean keeps. One per line, # starts a comment.
+# Only third-party images that are slow or impossible to pull again belong here;
+# locally built images are rebuilt from their Dockerfiles.
+
+# CI and tooling
+catthehacker/ubuntu:act-latest
+mcp/puppeteer:latest
+python:3.13-slim
+python:3.14-slim
+python:3-slim
+python:3-alpine
+node:22-slim
+ubuntu:24.04
+mariadb:11
+php:8.3-cli
+composer:2
+rust:1
+curlimages/curl:latest
+
+# Renpy
+dinaki/renpy:8.5.3
+jrottenberg/ffmpeg:latest
+
+# Legacy targets that are gone or hard to find upstream
+centos:6
+php:5.6-cli

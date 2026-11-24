@@ -2,12 +2,12 @@ DOCKER_UID := $(shell id -u)
 DOCKER_GID := $(shell id -g)
 export DOCKER_UID DOCKER_GID
 
-.PHONY: build test test-hooks test-statusline test-env-dropins test-gcl test-hooks-mutation test-bootstrap act act-clean shell destroy
+.PHONY: build test test-hooks test-statusline test-env-dropins test-docker-clean test-gcl test-hooks-mutation test-bootstrap act act-clean shell destroy
 
 build:
 	docker compose build
 
-test: build test-hooks test-statusline test-env-dropins test-gcl
+test: build test-hooks test-statusline test-env-dropins test-docker-clean test-gcl
 	docker compose run --rm test
 
 test-hooks: build
@@ -21,6 +21,9 @@ test-env-dropins: build
 
 test-gcl: build
 	docker compose run --rm test bats --print-output-on-failure /repo/tests/gcl
+
+test-docker-clean: build
+	docker compose run --rm test /repo/tests/test-docker-clean.sh
 
 # Applies deliberate relaxations to the hooks; every one must make the hook tests fail.
 test-hooks-mutation: build
