@@ -1,11 +1,40 @@
 ---
 name: docker
-description: Use whenever creating, naming, labelling, auditing or cleaning up Docker images, containers, volumes, networks or compose stacks, and before any docker prune or volume removal. Every object maps to a repo and is classed as state, cache or disposable, so nothing irreplaceable is removed and nothing temporary lingers.
+description: Use whenever running tools, tests or builds in containers, and whenever creating, naming, labelling, auditing or cleaning up Docker images, containers, volumes, networks or compose stacks, and before any docker prune or volume removal. Containers are throwaway and non-root, every object maps to a repo and is classed as state, cache or disposable, so nothing irreplaceable is removed and nothing temporary lingers.
 ---
 
-# Docker objects: traceable and classified
+# Docker: containers, traceable and classified objects
 
 Anyone looking at `docker ps`, `docker volume ls` or `docker image ls` must be able to tell which repo an object belongs to, what it is for, and whether it may be deleted.
+
+## Running containers
+
+Run tooling and builds (linters, test runners, compilers, package managers, one-off scripts) in throwaway containers, not on the host. Don't install runtimes or CLI tools on the host, and don't use a host binary just because it's there.
+
+- Use `docker compose run --rm`, not a long-lived container or bare `docker run`.
+- Use named volumes for caches. A missing cache is slow, not broken.
+- Wrap compose in a `Makefile` (`make build`, `test`, `run`, `lint`, ...) as the documented entry point.
+- Docker is pruned regularly: everything must rebuild from the committed compose file, Dockerfile, and Makefile with no manual setup.
+
+### Tear down what a run started
+
+Test harnesses are not permanent. Anything a test, check or one-off run starts (compose dependency services like a database or FTP server, helper containers, temp worktrees, scratch files) must be removed when that run ends, by the same target or script that started it (`docker compose down -v`, an exit trap), and by the agent at the end of a session if a run left it behind.
+
+- `depends_on` services started by `docker compose run --rm` outlive the run; the `--rm` only removes the one-off container. Tear the stack down explicitly.
+- No `restart: unless-stopped` or `always` on test-only services: it turns a workaround for one run into a container that survives forever and across daemon restarts. A restart policy is for services that are meant to stay up.
+- Compose project names default to the directory, so each git worktree makes its own stack. Removing a worktree means taking its stack down first.
+- Before ending a session in which containers were started, list them (`docker ps`) and stop the ones you started.
+
+### Non-root
+
+Containers run as non-root unless genuinely impossible. State the reason if falling back to root. A root container writing to a bind mount leaves root-owned host files the host user can't rewrite.
+
+- Match the container uid/gid to the host's: `user: "${DOCKER_UID}:${DOCKER_GID}"`. Don't assume the image default.
+- A named volume takes ownership from the image's contents at that path. Create the directory mode-1777 in the Dockerfile so an arbitrary uid can write; otherwise the volume is root-owned and first use fails.
+
+### apt in containers
+
+Start every container that runs apt with `rm -rf /var/lib/apt/lists/*`, before the first `apt-get update` (Dockerfile `RUN`, `docker run` command, or script). apt keeps a local `InRelease` with a later `Date` than the one the mirror serves, without re-verifying it or saying so, so a pre-populated or tampered lists directory can pin the index. Put it first in the same `RUN` as the `update`, not only as the final cleanup.
 
 ## Rules
 
