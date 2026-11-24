@@ -76,7 +76,7 @@ Files in the repo root:
 Workflows, calling the shared ones in `non7top/gh-workflows` (pin `@main`; it has no tags):
 - `release-please.yml` on push to the default branch: `uses: non7top/gh-workflows/.github/workflows/release-please.yml@main` with `contents: write` and `pull-requests: write`.
 - `release-please-preview.yml` on `pull_request` (types `opened`, `synchronize`, `reopened`, `edited`) with a concurrency group per PR number: `uses: non7top/gh-workflows/.github/workflows/release-please-preview.yml@main`. It runs `non7top/release-please-forecast@v1` and colors the `RELEASE` label by the predicted bump before the merge. Without the reusable workflow, call the action directly after a checkout with `fetch-depth: 0`.
-- `release.yml` builds and publishes (`workflow_call` with `tag` and `publish` inputs, plus `workflow_dispatch`). A tag made with `GITHUB_TOKEN` does not trigger other workflows, so `release-please.yml` calls it when a release was created, passing `secrets: inherit`. Publishing artifacts also needs `id-token: write` and `attestations: write`.
+- `release.yml` builds, attests, signs and uploads the artifacts. A tag made with `GITHUB_TOKEN` does not trigger other workflows, so it is started from `release-please` (`workflow_run` or `workflow_call`). Wiring, per-platform recipes (Windows, Android, apt, PyPI) and verification are in the `gh-release` skill.
 - `conventional-commits.yml` validates every commit in the PR, since merge commits make release-please read each one. Allowed types include `deps`.
 
 ## 6. CI lint

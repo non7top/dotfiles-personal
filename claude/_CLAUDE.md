@@ -112,6 +112,7 @@ Before any commit, branch, rebase, push, PR, merge or GitHub Actions change, loa
 - Stage by explicit path; never `git add .`, `-A` or `commit -a`. Commit messages use Conventional Commits prefixes.
 - Commits are atomic (one change, only its files). PRs need not be: one PR may carry several similar changes, so don't split work into one PR per change.
 - Creating a repository, or bringing one up to the standard setup (repo settings, Dependabot, release-please): load the `new-repo` skill (`~/.claude/skills/new-repo/SKILL.md`).
+- Writing, changing or auditing a release workflow (build, signing, provenance, apt repo, PyPI): load the `gh-release` skill (`~/.claude/skills/gh-release/SKILL.md`).
 - Test a new or edited workflow locally with `act` before triggering a real run.
 
 ## Keep private out of public
