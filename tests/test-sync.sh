@@ -42,6 +42,11 @@ if [ ! -e "$FAKEHOME/.claude/README.rst" ] && [ ! -e "$FAKEHOME/.claude/_README.
 else
     bad "claude/README.rst was synced into .claude"
 fi
+if [ ! -e "$FAKEHOME/.gemini/README.rst" ] && [ ! -e "$FAKEHOME/.gemini/_README.rst" ]; then
+    ok "gemini/README.rst is not synced into .gemini"
+else
+    bad "gemini/README.rst was synced into .gemini"
+fi
 if [ -z "$(DF --check)" ]; then
     ok "--check clean after fresh sync"
 else
