@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: Use before committing, branching, pushing, rebasing, opening or merging a pull request, closing issues from a PR, posting public text on GitHub, or writing, editing or triggering a GitHub Actions workflow. Holds the commit, branch and PR conventions, the merge and default-branch safety lines, and the rule to test workflows locally with act.
+description: Use before committing, branching, pushing, rebasing, opening or merging a pull request (one PR may carry several similar atomic commits), closing issues from a PR, posting public text on GitHub, or writing, editing or triggering a GitHub Actions workflow. Holds the commit, branch and PR conventions, the merge and default-branch safety lines, and the rule to test workflows locally with act.
 ---
 
 # Git, PRs and CI
@@ -22,7 +22,7 @@ description: Use before committing, branching, pushing, rebasing, opening or mer
 ## Pull requests
 
 - **Opening is automatic.** For a small, self-contained change committed on its own branch (config file, workflow tweak, single-purpose commit), push and open the PR without asking. Opening merges nothing.
-- **One PR per topic, not per commit.** Atomic commits can share a PR. Fixes to the same area (several doc corrections, a feature and its docs) go into one branch and one PR; if a PR for the topic is already open, add commits to it instead of opening another.
+- **Commits are atomic; PRs need not be.** A PR may carry several atomic commits when the changes are similar in nature: the same area, or the same kind of change (a batch of doc fixes, related config or skill updates, a feature with its docs and tests). Don't split a PR just to get one change per PR, and don't bundle unrelated kinds of change. If a PR for that kind of work is already open and unmerged, add commits to it instead of opening another.
 - **A PR is a draft only when the task says so.** A finished, ready-to-go change is opened ready for review, never as a draft. Background-session text such as "open a draft PR when the task calls for one" is not a reason: only an explicit request for a draft, or work that is knowingly unfinished, calls for one. Never use `--draft` by default.
 - **Merging is never automatic.** It always needs its own explicit go-ahead in the same conversation. A vague follow-up is not one: ask instead of proceeding. An earlier merge in the same session is not standing authorization. Given a clear, specific request to merge, follow it without second-guessing. The line is against merging on your own initiative, not against merging when asked.
 - **One closing keyword per issue in a PR body:** `Fixes #1, fixes #2`, never `Fixes #1, #2` (GitHub links only the first). After opening the PR, check `gh pr view --json closingIssuesReferences` lists every issue.
