@@ -90,6 +90,68 @@ function is_squash_merged() {
     [[ $(git cherry "$base" "$(git commit-tree "$(git rev-parse "$branch^{tree}")" -p "$ancestor" -m _)") == "-"* ]]
 }
 
+# $1=ref $2=base (default: the default branch)
+# A branch whose non-merge commits were all applied to base (e.g. cherry-picked
+# or rebased individually, or landed via separate PRs). git cherry reports
+# applied commits with '-' and unapplied commits with '+'.
+function is_cherry_merged() {
+  local branch=$1 base=${2:-$(git sd)} cherry_out
+  cherry_out=$(git cherry "$base" "$branch" 2>/dev/null) || return 1
+  if [[ -n $cherry_out ]]; then
+    [[ $(grep -c '^+ ' <<< "$cherry_out") -eq 0 ]]
+  else
+    [[ $(git rev-list --count "$base..$branch" 2>/dev/null) -gt 0 ]] && [[ -z $(git diff "$base...$branch" 2>/dev/null) ]]
+  fi
+}
+
+# Checks if a merged GitHub PR exists with the same head SHA as $branch
+function is_gh_pr_merged() {
+  local branch=$1 head_sha pr_info
+  command -v gh &>/dev/null || return 1
+  head_sha=$(git rev-parse "$branch" 2>/dev/null) || return 1
+  pr_info=$(gh pr list --state merged --head "$branch" --json headRefOid,baseRefName,number --jq '.[0] | "\(.headRefOid) \(.baseRefName) #\(.number)"' 2>/dev/null) || return 1
+  [[ -z $pr_info || $pr_info == "null null #"* ]] && return 1
+  local pr_sha pr_base pr_num
+  read -r pr_sha pr_base pr_num <<< "$pr_info"
+  [[ $pr_sha == "$head_sha" ]]
+}
+
+# Checks if $branch is an ancestor of another remote branch on origin
+function merged_into_remote_branch() {
+  local branch=$1 default=${2:-$(git sd)} remote_ref remote_name
+  for remote_ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/); do
+    remote_name=${remote_ref#origin/}
+    [[ $remote_name == "HEAD" || $remote_name == "$default" || $remote_name == "$branch" ]] && continue
+    if git merge-base --is-ancestor "$branch" "$remote_ref" 2>/dev/null; then
+      echo "$remote_ref"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Generates a diagnostic skip reason for an unmerged branch
+function branch_skip_reason() {
+  local branch=$1 base=${2:-$(git sd)}
+  local other_remote
+  if other_remote=$(merged_into_remote_branch "$branch" "$base"); then
+    echo "merged into $other_remote"
+    return
+  fi
+  local counts ahead behind unapplied
+  counts=$(git rev-list --left-right --count "$base...$branch" 2>/dev/null)
+  behind=$(awk '{print $1}' <<< "$counts")
+  ahead=$(awk '{print $2}' <<< "$counts")
+  unapplied=$(git cherry "$base" "$branch" 2>/dev/null | grep -c '^+ ' || true)
+  echo "not merged (ahead ${ahead:-0}, behind ${behind:-0}; ${unapplied:-0} unapplied)"
+}
+
+# $1=ref $2=base
+function is_branch_merged() {
+  local ref=$1 base=${2:-$(git sd)}
+  git merge-base --is-ancestor "$ref" "$base" || is_squash_merged "$ref" "$base" || is_cherry_merged "$ref" "$base" || is_gh_pr_merged "$ref"
+}
+
 # A mid-rebase worktree looks detached at an old, "merged" commit
 function worktree_in_progress() {
   local gd name
@@ -123,8 +185,8 @@ function git_maybe_remove_worktree() {
   current=$(git rev-parse --show-toplevel)
   ref=${branch:-$head}
   [[ -z $ref || ! -d $path ]] && return
-  if ! git merge-base --is-ancestor "$ref" "$default" && ! is_squash_merged "$ref"; then
-    say_skip "Skip worktree $path (${branch:-detached $head}): not merged"
+  if ! is_branch_merged "$ref" "$default"; then
+    say_skip "Skip worktree $path (${branch:-detached $head}): $(branch_skip_reason "$ref" "$default")"
     return
   fi
   ref=${branch:-detached $head}
@@ -178,8 +240,10 @@ function git_remove_merged_worktrees() {
 # This clean up function cannot remove local squash-merged branch.
 function git_remove_squash_merged_local_branch() {
   say_start "Start removing out-dated local squash-merged branches"
-  local default branch wt
+  local default base branch wt
   default=$(git sd)
+  base=origin/$default
+  git rev-parse --verify -q "$base" >/dev/null 2>&1 || base=$default
   if ! act git cd; then
     say_skip "Skip squash-merged branch check: cannot switch to $default"
     say_finish "Finish removing out-dated local squash-merged branches"
@@ -187,12 +251,12 @@ function git_remove_squash_merged_local_branch() {
   fi
   while read -r branch; do
     [[ $branch == "$default" || -n ${REPORTED[$branch]} ]] && continue
-    if ! is_squash_merged "$branch"; then
-      say_skip "Skip branch $branch: not merged"
-    elif wt=$(branch_worktree "$branch") && [[ -n $wt ]]; then
-      say_skip "Skip branch $branch: checked out in $wt"
-    else
-      act git branch -D "$branch"
+    if is_squash_merged "$branch" "$base" || is_cherry_merged "$branch" "$base" || is_gh_pr_merged "$branch"; then
+      if wt=$(branch_worktree "$branch") && [[ -n $wt ]]; then
+        say_skip "Skip branch $branch: checked out in $wt"; REPORTED[$branch]=1
+      else
+        act git branch -D "$branch" && REPORTED[$branch]=1
+      fi
     fi
   done < <(git for-each-ref refs/heads/ "--format=%(refname:short)")
   say_finish "Finish removing out-dated local squash-merged branches"
@@ -211,13 +275,13 @@ function git_remove_upstream_merged_local_branch() {
   while read -r branch; do
     [[ $branch == "$default" || -n ${REPORTED[$branch]} ]] && continue
     if [[ $(git rev-parse "$branch") == "$(git rev-parse "$base")" ]]; then
-      say_skip "Skip branch $branch: no commits of its own"
+      say_skip "Skip branch $branch: no commits of its own"; REPORTED[$branch]=1
     elif [[ $(git rev-list --count "$base..$branch") != 0 ]]; then
-      continue # unmerged, already reported by the checks above
+      say_skip "Skip branch $branch: $(branch_skip_reason "$branch" "$base")"; REPORTED[$branch]=1
     elif wt=$(branch_worktree "$branch") && [[ -n $wt ]]; then
-      say_skip "Skip branch $branch: checked out in $wt"
+      say_skip "Skip branch $branch: checked out in $wt"; REPORTED[$branch]=1
     else
-      act git branch -D "$branch"
+      act git branch -D "$branch" && REPORTED[$branch]=1
     fi
   done < <(git for-each-ref refs/heads/ "--format=%(refname:short)")
   say_finish "Finish removing local branches with no commits beyond origin default"
@@ -238,13 +302,87 @@ function git_remove_merged_remote_branches() {
     [[ $branch == "HEAD" || $branch == "$default" ]] && continue
     if [[ $(git rev-parse "origin/$branch") == "$(git rev-parse "$base")" ]]; then
       say_skip "Skip remote branch $branch: no commits of its own"
-    elif git merge-base --is-ancestor "origin/$branch" "$base" || is_squash_merged "origin/$branch" "$base"; then
+    elif git merge-base --is-ancestor "origin/$branch" "$base" || is_squash_merged "origin/$branch" "$base" || is_cherry_merged "origin/$branch" "$base"; then
       act git push origin --delete "$branch"
     else
-      say_skip "Skip remote branch $branch: not merged"
+      say_skip "Skip remote branch $branch: $(branch_skip_reason "origin/$branch" "$base")"
     fi
   done < <(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin/)
   say_finish "Finish removing merged remote branches"
+}
+
+# Report leftover stashes and whether their work was merged into origin/<default>
+function git_report_stashes() {
+  local stash_list
+  stash_list=$(git stash list --format="%gd %h %gs" 2>/dev/null) || return 0
+  [[ -z $stash_list ]] && return 0
+
+  say_start "Start checking leftover stashes"
+  local default base
+  default=$(git sd)
+  base=origin/$default
+  git rev-parse --verify -q "$base" >/dev/null 2>&1 || base=$default
+
+  local line stash_ref sha msg
+  while IFS= read -r line; do
+    [[ -z $line ]] && continue
+    stash_ref=$(awk '{print $1}' <<< "$line")
+    sha=$(awk '{print $2}' <<< "$line")
+    msg=$(cut -d' ' -f3- <<< "$line")
+
+    local branch="" branch_status=""
+    if [[ $msg =~ (WIP on |On )([^:]+): ]]; then
+      branch="${BASH_REMATCH[2]}"
+      if git show-ref --verify --quiet "refs/heads/$branch" 2>/dev/null || \
+         git show-ref --verify --quiet "refs/remotes/origin/$branch" 2>/dev/null; then
+        branch_status="on $branch"
+      else
+        branch_status="on $branch (branch gone)"
+      fi
+    fi
+
+    local file blob total_files=0 matched_files=0
+    local unmatched=()
+
+    # Tracked files changed in stash
+    while IFS= read -r file; do
+      [[ -z $file ]] && continue
+      ((total_files++))
+      blob=$(git rev-parse "$stash_ref:$file" 2>/dev/null) || true
+      if [[ -n $blob ]] && git log "$base" -n 1 --find-object="$blob" --format=%H 2>/dev/null | grep -q .; then
+        ((matched_files++))
+      else
+        unmatched+=("$file")
+      fi
+    done < <(git diff --name-only "$stash_ref^1" "$stash_ref" 2>/dev/null)
+
+    # Untracked files in stash (stash@{N}^3), if any
+    if git rev-parse -q --verify "$stash_ref^3" >/dev/null 2>&1; then
+      while IFS= read -r file; do
+        [[ -z $file ]] && continue
+        ((total_files++))
+        blob=$(git rev-parse "$stash_ref^3:$file" 2>/dev/null) || true
+        if [[ -n $blob ]] && git log "$base" -n 1 --find-object="$blob" --format=%H 2>/dev/null | grep -q .; then
+          ((matched_files++))
+        else
+          unmatched+=("$file")
+        fi
+      done < <(git ls-tree -r --name-only "$stash_ref^3" 2>/dev/null)
+    fi
+
+    local desc="$stash_ref ($sha${branch_status:+, $branch_status})"
+    if [[ $total_files -gt 0 && $matched_files -eq $total_files ]]; then
+      say_note "$desc: fully merged (all $total_files files in $base)"
+      say_note "  drop with: git stash drop $stash_ref"
+    elif [[ $matched_files -gt 0 ]]; then
+      say_note "$desc: partially merged ($matched_files/$total_files files in $base)"
+      say_note "  unmatched (edited after, or not merged): ${unmatched[*]}"
+      say_note "  drop with: git stash drop $stash_ref"
+    else
+      say_note "$desc: not merged"
+    fi
+  done <<< "$stash_list"
+  say_finish "Finish checking leftover stashes"
 }
 
 # Clean up remote and local branches
@@ -255,6 +393,7 @@ function gcl() {
   git_remove_squash_merged_local_branch
   git_remove_upstream_merged_local_branch
   if [[ $REMOTE_DELETE == 1 || $DRY_RUN == 1 ]]; then git_remove_merged_remote_branches; fi
+  git_report_stashes
 }
 
 gcl
