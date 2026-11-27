@@ -1,0 +1,14 @@
+{
+  "allowNonWorkspaceAccess": true,
+  "enableTerminalSandbox": false,
+  "statusLine": {
+    "command": "~/.gemini/statusline-command.sh",
+    "enabled": true,
+    "type": ""
+  },
+  "title": {
+    "command": "~/.gemini/title-command.sh",
+    "enabled": true,
+    "type": ""
+  }
+}

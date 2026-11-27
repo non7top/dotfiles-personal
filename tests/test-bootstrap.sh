@@ -144,6 +144,13 @@ for link in .bashrc .vimrc .claude/skills .claude/statusline-command.sh .gemini/
     fi
 done
 
+echo "== antigravity-cli settings"
+if [ -f "$HOME/.gemini/antigravity-cli/settings.json" ] && jq -e '.enableTerminalSandbox == false' "$HOME/.gemini/antigravity-cli/settings.json" >/dev/null 2>&1; then
+    ok "antigravity-cli sandbox disabled in settings.json"
+else
+    bad "antigravity-cli sandbox not disabled in settings.json"
+fi
+
 echo
 echo "passed=$pass failed=$fail"
 [ "$fail" -eq 0 ]
