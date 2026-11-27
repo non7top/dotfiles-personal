@@ -311,11 +311,19 @@ else
     success "vim-plug installed"
 fi
 
-# Configure Antigravity CLI (agy) settings: disable terminal sandbox
-if command -v jq &>/dev/null; then
-    AGY_DIR="$HOME/.gemini/antigravity-cli"
-    AGY_SETTINGS="$AGY_DIR/settings.json"
-    mkdir -p "$AGY_DIR"
+# Configure Antigravity CLI (agy) settings: disable terminal sandbox and apply template
+AGY_DIR="$HOME/.gemini/antigravity-cli"
+AGY_SETTINGS="$AGY_DIR/settings.json"
+mkdir -p "$AGY_DIR"
+if command -v fsettings &>/dev/null && [ -f "$SCRIPT_DIR/gemini/settings.template.json" ]; then
+    info "Applying Antigravity CLI template settings via fsettings..."
+    if fsettings -q push "$SCRIPT_DIR/gemini/settings.template.json" "$AGY_SETTINGS"; then
+        success "antigravity-cli settings applied"
+    else
+        skip "failed to apply antigravity-cli template settings" \
+             "retry with: fsettings push $SCRIPT_DIR/gemini/settings.template.json $AGY_SETTINGS"
+    fi
+elif command -v jq &>/dev/null; then
     if [ ! -f "$AGY_SETTINGS" ]; then
         echo '{"enableTerminalSandbox": false}' > "$AGY_SETTINGS"
         success "antigravity-cli settings.json created with sandbox disabled"

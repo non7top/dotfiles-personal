@@ -47,6 +47,11 @@ if [ ! -e "$FAKEHOME/.gemini/README.rst" ] && [ ! -e "$FAKEHOME/.gemini/_README.
 else
     bad "gemini/README.rst was synced into .gemini"
 fi
+if [ ! -e "$FAKEHOME/.gemini/settings.template.json" ]; then
+    ok "gemini/settings.template.json is not synced into .gemini"
+else
+    bad "gemini/settings.template.json was synced into .gemini"
+fi
 if [ -z "$(DF --check)" ]; then
     ok "--check clean after fresh sync"
 else

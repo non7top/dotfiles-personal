@@ -13,6 +13,7 @@ ignore = [
     'docker-compose.yml',
     'tests',
     '*.swp',
+    '*.template.json',
     'LICENSE',
     'README.rst'
     ]
